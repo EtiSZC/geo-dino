@@ -3,6 +3,13 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
+import { Search, MapPin } from 'lucide-react';
+
+interface GeocodingResult {
+  id: string;
+  place_name: string;
+  center: [number, number];
+}
 
 interface JourneyMapProps {
   mapboxToken: string;
@@ -35,6 +42,9 @@ export function JourneyMap({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [setupStep, setSetupStep] = useState<'start' | 'end' | 'done'>('start');
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Helper to safely add route to map
   const addRouteToMap = useCallback((routeCoords: [number, number][]) => {
@@ -96,6 +106,69 @@ export function JourneyMap({
       console.error('Error fetching route:', error);
     }
   }, [mapboxToken, addRouteToMap, onRouteCalculated]);
+
+  // Search for addresses using Mapbox Geocoding API
+  const searchAddress = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const encodedQuery = encodeURIComponent(query.trim());
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json?access_token=${mapboxToken}&limit=5`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.features) {
+        setSearchResults(data.features.map((f: any) => ({
+          id: f.id,
+          place_name: f.place_name,
+          center: f.center as [number, number],
+        })));
+      }
+    } catch (error) {
+      console.error('Error searching address:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [mapboxToken]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchAddress(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchAddress]);
+
+  // Handle selecting a search result as destination
+  const selectDestination = useCallback((coords: [number, number]) => {
+    if (onSetEnd) onSetEnd(coords);
+    setSetupStep('done');
+    setSearchQuery('');
+    setSearchResults([]);
+    
+    if (endMarker.current) endMarker.current.remove();
+    const el = document.createElement('div');
+    el.className = 'w-8 h-8 rounded-full bg-accent border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
+    el.innerHTML = '<span class="text-sm font-bold text-white">E</span>';
+    endMarker.current = new mapboxgl.Marker(el)
+      .setLngLat(coords)
+      .addTo(map.current!);
+
+    map.current?.flyTo({
+      center: coords,
+      zoom: 15,
+      duration: 1000,
+    });
+
+    if (startCoords) {
+      fetchPedestrianRoute(startCoords, coords);
+    }
+  }, [onSetEnd, startCoords, fetchPedestrianRoute]);
 
   // Initialize map centered on Paris
   useEffect(() => {
@@ -283,9 +356,39 @@ export function JourneyMap({
               </>
             )}
             {setupStep === 'end' && (
-              <p className="text-sm font-medium">
-                🏁 Tap on the map to set your <span className="text-accent font-bold">destination</span>
-              </p>
+              <div className="space-y-3">
+                <p className="text-sm font-medium">
+                  🏁 Tap on the map or search for your <span className="text-accent font-bold">destination</span>
+                </p>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search for an address..."
+                    className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    maxLength={200}
+                  />
+                </div>
+                {isSearching && (
+                  <p className="text-xs text-muted-foreground">Searching...</p>
+                )}
+                {searchResults.length > 0 && (
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {searchResults.map((result) => (
+                      <button
+                        key={result.id}
+                        onClick={() => selectDestination(result.center)}
+                        className="w-full flex items-start gap-2 p-2 text-left bg-background/60 hover:bg-background/80 rounded-lg transition-colors"
+                      >
+                        <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                        <span className="text-xs line-clamp-2">{result.place_name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
             {setupStep === 'done' && (
               <p className="text-sm font-medium text-success">
