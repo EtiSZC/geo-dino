@@ -32,8 +32,8 @@ function calculateOptimalWaypointCount(totalDistance: number): number {
   
   const maxPossibleWaypoints = Math.floor(totalDistance / MIN_DISTANCE_BETWEEN_WAYPOINTS) - 1;
   
-  // Clamp between 1 and MAX_WAYPOINTS
-  return Math.max(1, Math.min(MAX_WAYPOINTS, maxPossibleWaypoints));
+  // Clamp between 0 and MAX_WAYPOINTS (allow 0 for very short routes)
+  return Math.max(0, Math.min(MAX_WAYPOINTS, maxPossibleWaypoints));
 }
 
 // Generate checkpoints along an actual route path
@@ -59,9 +59,9 @@ export function generateCheckpointsAlongRoute(
   const optimalCount = calculateOptimalWaypointCount(totalDistance);
   const count = Math.min(requestedCount, optimalCount, MAX_WAYPOINTS);
   
-  // If route is too short for even 1 waypoint with proper spacing, return empty
-  if (totalDistance < MIN_DISTANCE_BETWEEN_WAYPOINTS * 2) {
-    console.log(`Route too short (${totalDistance.toFixed(0)}m) for waypoints`);
+  // If route is too short for any waypoints with proper spacing, return empty
+  if (count === 0) {
+    console.log(`Route too short (${totalDistance.toFixed(0)}m) for waypoints with ${MIN_DISTANCE_BETWEEN_WAYPOINTS}m spacing`);
     return [];
   }
   
@@ -114,9 +114,9 @@ export function generateCheckpoints(
   const optimalCount = calculateOptimalWaypointCount(totalDistance);
   const count = Math.min(requestedCount, optimalCount, MAX_WAYPOINTS);
   
-  // If route is too short for even 1 waypoint with proper spacing, return empty
-  if (totalDistance < MIN_DISTANCE_BETWEEN_WAYPOINTS * 2) {
-    console.log(`Route too short (${totalDistance.toFixed(0)}m) for waypoints`);
+  // If route is too short for any waypoints with proper spacing, return empty
+  if (count === 0) {
+    console.log(`Route too short (${totalDistance.toFixed(0)}m) for waypoints with ${MIN_DISTANCE_BETWEEN_WAYPOINTS}m spacing`);
     return [];
   }
   

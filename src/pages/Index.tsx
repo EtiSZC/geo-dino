@@ -11,6 +11,7 @@ import { MusicReward, MUSIC_GENRES } from '@/types/app';
 import { createJourneyWithRoute } from '@/lib/geoUtils';
 import { getRandomTrack } from '@/lib/musicDatabase';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 type AppView = 'home' | 'genre' | 'setup-journey' | 'active-journey' | 'rewards';
 
@@ -120,6 +121,12 @@ export default function Index() {
     if (!startPoint || !endPoint || !routeCoords) return;
 
     const journey = createJourneyWithRoute('My Journey', startPoint, endPoint, routeCoords);
+    
+    if (journey.checkpoints.length === 0) {
+      toast.error('Route too short! Need at least 200m for waypoints with 100m spacing.');
+      return;
+    }
+    
     setJourney(journey);
     setView('home');
     setStartPoint(null);
