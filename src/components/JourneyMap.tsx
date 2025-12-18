@@ -248,15 +248,43 @@ export function JourneyMap({
       
       {mode === 'setup' && (
         <div className="absolute top-4 left-4 right-4 z-10">
-          <div className="glass-card p-4 text-center">
+          <div className="glass-card p-4 text-center space-y-3">
             {setupStep === 'start' && (
-              <p className="text-sm font-medium">
-                📍 Tap on the map to set your <span className="text-primary font-bold">starting point</span>
-              </p>
+              <>
+                <p className="text-sm font-medium">
+                  📍 Tap on the map to set your <span className="text-primary font-bold">starting point</span>
+                </p>
+                {currentPosition && (
+                  <button
+                    onClick={() => {
+                      setStartCoords(currentPosition);
+                      if (onSetStart) onSetStart(currentPosition);
+                      setSetupStep('end');
+                      
+                      if (startMarker.current) startMarker.current.remove();
+                      const el = document.createElement('div');
+                      el.className = 'w-8 h-8 rounded-full bg-primary border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
+                      el.innerHTML = '<span class="text-sm font-bold text-white">S</span>';
+                      startMarker.current = new mapboxgl.Marker(el)
+                        .setLngLat(currentPosition)
+                        .addTo(map.current!);
+                      
+                      map.current?.flyTo({
+                        center: currentPosition,
+                        zoom: 15,
+                        duration: 1000,
+                      });
+                    }}
+                    className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    📍 Use My Current Location
+                  </button>
+                )}
+              </>
             )}
             {setupStep === 'end' && (
               <p className="text-sm font-medium">
-                🏁 Now tap to set your <span className="text-accent font-bold">destination</span>
+                🏁 Tap on the map to set your <span className="text-accent font-bold">destination</span>
               </p>
             )}
             {setupStep === 'done' && (
