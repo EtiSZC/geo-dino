@@ -8,7 +8,7 @@ import { RewardScreen } from '@/components/RewardScreen';
 import { RewardsHistory } from '@/components/RewardsHistory';
 import { Button } from '@/components/ui/button';
 import { MusicReward, MUSIC_GENRES } from '@/types/app';
-import { createJourney } from '@/lib/geoUtils';
+import { createJourneyWithRoute } from '@/lib/geoUtils';
 import { getRandomTrack } from '@/lib/musicDatabase';
 
 type AppView = 'home' | 'genre' | 'setup-journey' | 'active-journey' | 'rewards';
@@ -30,6 +30,7 @@ export default function Index() {
   const [showReward, setShowReward] = useState<MusicReward | null>(null);
   const [startPoint, setStartPoint] = useState<[number, number] | null>(null);
   const [endPoint, setEndPoint] = useState<[number, number] | null>(null);
+  const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
   // Watch user position
@@ -86,16 +87,17 @@ export default function Index() {
     addReward(reward);
   }, [state.user.currentJourney, state.user.selectedGenre, addReward]);
 
-  // Handle creating journey after both points are set
+  // Handle creating journey after route is calculated
   const handleCreateJourney = useCallback(() => {
-    if (!startPoint || !endPoint) return;
+    if (!startPoint || !endPoint || !routeCoords) return;
 
-    const journey = createJourney('My Journey', startPoint, endPoint);
+    const journey = createJourneyWithRoute('My Journey', startPoint, endPoint, routeCoords);
     setJourney(journey);
     setView('home');
     setStartPoint(null);
     setEndPoint(null);
-  }, [startPoint, endPoint, setJourney]);
+    setRouteCoords(null);
+  }, [startPoint, endPoint, routeCoords, setJourney]);
 
   const selectedGenreName = state.user.selectedGenre
     ? MUSIC_GENRES.find(g => g.id === state.user.selectedGenre)?.name
@@ -137,10 +139,15 @@ export default function Index() {
       {view === 'setup-journey' && (
         <div className="min-h-screen flex flex-col">
           <header className="p-4 flex items-center justify-between z-10 relative">
-            <Button variant="ghost" size="sm" onClick={() => setView('home')}>
+            <Button variant="ghost" size="sm" onClick={() => {
+              setView('home');
+              setStartPoint(null);
+              setEndPoint(null);
+              setRouteCoords(null);
+            }}>
               ← Back
             </Button>
-            {startPoint && endPoint && (
+            {startPoint && endPoint && routeCoords && (
               <Button onClick={handleCreateJourney}>
                 Create Journey
               </Button>
@@ -148,13 +155,14 @@ export default function Index() {
           </header>
           <div className="flex-1 -mt-16">
             <JourneyMap
-              mapboxToken={state.user.mapboxToken}
+              mapboxToken={state.user.mapboxToken!}
               journey={null}
               currentPosition={state.currentPosition}
               isActive={false}
               mode="setup"
               onSetStart={setStartPoint}
               onSetEnd={setEndPoint}
+              onRouteCalculated={setRouteCoords}
             />
           </div>
         </div>

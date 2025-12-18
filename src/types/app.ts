@@ -27,6 +27,7 @@ export interface Journey {
   startPoint: [number, number];
   endPoint: [number, number];
   checkpoints: Checkpoint[];
+  routeCoordinates?: [number, number][]; // Actual pedestrian route path
   createdAt: Date;
 }
 
