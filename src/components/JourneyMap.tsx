@@ -211,7 +211,7 @@ export function JourneyMap({
     }
   }, [onSetEnd, startCoords, fetchPedestrianRoute]);
 
-  // Initialize map centered on Paris
+  // Initialize map and auto-center on user location in setup mode
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
@@ -220,7 +220,7 @@ export function JourneyMap({
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/dark-v11',
-      center: [2.3522, 48.8566], // Paris center
+      center: [2.3522, 48.8566], // Default center (Paris)
       zoom: 13,
       pitch: 45,
     });
@@ -229,6 +229,25 @@ export function JourneyMap({
 
     map.current.on('load', () => {
       setMapLoaded(true);
+      
+      // Auto-center on user location in setup mode
+      if (mode === 'setup') {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
+            setLocalPosition(coords);
+            map.current?.flyTo({
+              center: coords,
+              zoom: 15,
+              duration: 1000,
+            });
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      }
     });
 
     return () => {
@@ -236,7 +255,7 @@ export function JourneyMap({
       map.current = null;
       setMapLoaded(false);
     };
-  }, [mapboxToken]);
+  }, [mapboxToken, mode]);
 
   // Handle map clicks in setup mode
   useEffect(() => {
