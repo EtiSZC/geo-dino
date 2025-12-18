@@ -1,17 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, Music, Settings, Play, ChevronRight, RotateCcw } from 'lucide-react';
+import { MapPin, Music, Play, ChevronRight, RotateCcw } from 'lucide-react';
 import { useAppState } from '@/hooks/useAppState';
-import { MapboxSetup } from '@/components/MapboxSetup';
 import { GenreSelector } from '@/components/GenreSelector';
 import { JourneyMap } from '@/components/JourneyMap';
 import { JourneyTracker } from '@/components/JourneyTracker';
 import { RewardScreen } from '@/components/RewardScreen';
 import { RewardsHistory } from '@/components/RewardsHistory';
 import { Button } from '@/components/ui/button';
-import { MusicReward, MUSIC_GENRES, Journey } from '@/types/app';
+import { MusicReward, MUSIC_GENRES } from '@/types/app';
 import { createJourney } from '@/lib/geoUtils';
 import { getRandomTrack } from '@/lib/musicDatabase';
-import { cn } from '@/lib/utils';
 
 type AppView = 'home' | 'genre' | 'setup-journey' | 'active-journey' | 'rewards';
 
@@ -19,7 +17,6 @@ export default function Index() {
   const {
     state,
     setGenre,
-    setMapboxToken,
     setJourney,
     startJourney,
     stopJourney,
@@ -99,11 +96,6 @@ export default function Index() {
     setStartPoint(null);
     setEndPoint(null);
   }, [startPoint, endPoint, setJourney]);
-
-  // If no Mapbox token, show setup
-  if (!state.user.mapboxToken) {
-    return <MapboxSetup onSetToken={setMapboxToken} />;
-  }
 
   const selectedGenreName = state.user.selectedGenre
     ? MUSIC_GENRES.find(g => g.id === state.user.selectedGenre)?.name
@@ -234,9 +226,6 @@ export default function Index() {
                 <p className="text-xs text-muted-foreground">Discover music on the go</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setMapboxToken('')}>
-              <Settings className="w-5 h-5" />
-            </Button>
           </header>
 
           {/* Genre selection card */}

@@ -3,12 +3,14 @@ import { AppState, UserProfile, Journey, MusicReward, GenreId } from '@/types/ap
 
 const STORAGE_KEY = 'soundquest_data';
 
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXRpc3pjIiwiYSI6ImNtamI5ZG1kMTAwNnczZHNtanY3N2s4bnEifQ.LpEZBQpE3_8MdmdqIPFHEQ';
+
 const defaultUserProfile: UserProfile = {
   selectedGenre: null,
   currentJourney: null,
   completedJourneys: [],
   rewards: [],
-  mapboxToken: null,
+  mapboxToken: MAPBOX_TOKEN,
 };
 
 const defaultAppState: AppState = {
