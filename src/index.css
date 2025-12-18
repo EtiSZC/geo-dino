@@ -4,6 +4,42 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* Geocoder custom styles */
+.geocoder-container .mapboxgl-ctrl-geocoder {
+  width: 100%;
+  max-width: 100%;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  box-shadow: none;
+  min-width: 0;
+}
+
+.geocoder-container .mapboxgl-ctrl-geocoder input {
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+}
+
+.geocoder-container .mapboxgl-ctrl-geocoder input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.geocoder-container .mapboxgl-ctrl-geocoder .suggestions {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+}
+
+.geocoder-container .mapboxgl-ctrl-geocoder .suggestions > li > a {
+  color: hsl(var(--foreground));
+}
+
+.geocoder-container .mapboxgl-ctrl-geocoder .suggestions > .active > a,
+.geocoder-container .mapboxgl-ctrl-geocoder .suggestions > li > a:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
 @layer base {
   :root {
     --background: 240 15% 6%;
