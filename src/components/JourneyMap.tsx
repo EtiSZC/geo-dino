@@ -45,6 +45,47 @@ export function JourneyMap({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [localPosition, setLocalPosition] = useState<[number, number] | null>(null);
+
+  // Use either passed currentPosition or locally fetched position
+  const effectivePosition = currentPosition || localPosition;
+
+  // Request current location
+  const requestCurrentLocation = useCallback(() => {
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
+        setLocalPosition(coords);
+        setIsGettingLocation(false);
+        
+        // Auto-set as start point
+        setStartCoords(coords);
+        if (onSetStart) onSetStart(coords);
+        setSetupStep('end');
+        
+        if (startMarker.current) startMarker.current.remove();
+        const el = document.createElement('div');
+        el.className = 'w-8 h-8 rounded-full bg-primary border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
+        el.innerHTML = '<span class="text-sm font-bold text-white">S</span>';
+        startMarker.current = new mapboxgl.Marker(el)
+          .setLngLat(coords)
+          .addTo(map.current!);
+        
+        map.current?.flyTo({
+          center: coords,
+          zoom: 15,
+          duration: 1000,
+        });
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setIsGettingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, [onSetStart]);
 
   // Helper to safely add route to map
   const addRouteToMap = useCallback((routeCoords: [number, number][]) => {
@@ -327,32 +368,31 @@ export function JourneyMap({
                 <p className="text-sm font-medium">
                   📍 Tap on the map to set your <span className="text-primary font-bold">starting point</span>
                 </p>
-                {currentPosition && (
-                  <button
-                    onClick={() => {
-                      setStartCoords(currentPosition);
-                      if (onSetStart) onSetStart(currentPosition);
-                      setSetupStep('end');
-                      
-                      if (startMarker.current) startMarker.current.remove();
-                      const el = document.createElement('div');
-                      el.className = 'w-8 h-8 rounded-full bg-primary border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
-                      el.innerHTML = '<span class="text-sm font-bold text-white">S</span>';
-                      startMarker.current = new mapboxgl.Marker(el)
-                        .setLngLat(currentPosition)
-                        .addTo(map.current!);
-                      
-                      map.current?.flyTo({
-                        center: currentPosition,
-                        zoom: 15,
-                        duration: 1000,
-                      });
-                    }}
-                    className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-                  >
-                    📍 Use My Current Location
-                  </button>
-                )}
+                <button
+                  onClick={effectivePosition ? () => {
+                    setStartCoords(effectivePosition);
+                    if (onSetStart) onSetStart(effectivePosition);
+                    setSetupStep('end');
+                    
+                    if (startMarker.current) startMarker.current.remove();
+                    const el = document.createElement('div');
+                    el.className = 'w-8 h-8 rounded-full bg-primary border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
+                    el.innerHTML = '<span class="text-sm font-bold text-white">S</span>';
+                    startMarker.current = new mapboxgl.Marker(el)
+                      .setLngLat(effectivePosition)
+                      .addTo(map.current!);
+                    
+                    map.current?.flyTo({
+                      center: effectivePosition,
+                      zoom: 15,
+                      duration: 1000,
+                    });
+                  } : requestCurrentLocation}
+                  disabled={isGettingLocation}
+                  className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {isGettingLocation ? '📍 Getting location...' : '📍 Use My Current Location'}
+                </button>
               </>
             )}
             {setupStep === 'end' && (
