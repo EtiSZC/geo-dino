@@ -137,7 +137,7 @@ export default function Index() {
 
       {/* Journey setup view */}
       {view === 'setup-journey' && (
-        <div className="min-h-screen flex flex-col">
+        <div className="h-screen flex flex-col">
           <header className="p-4 flex items-center justify-between z-10 relative">
             <Button variant="ghost" size="sm" onClick={() => {
               setView('home');
@@ -153,7 +153,7 @@ export default function Index() {
               </Button>
             )}
           </header>
-          <div className="flex-1 -mt-16">
+          <div className="flex-1 relative">
             <JourneyMap
               mapboxToken={state.user.mapboxToken!}
               journey={null}
