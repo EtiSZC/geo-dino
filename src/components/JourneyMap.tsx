@@ -280,11 +280,11 @@ export function JourneyMap({
   }, [journey]);
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0 rounded-2xl overflow-hidden" />
+    <div className="absolute inset-0">
+      <div ref={mapContainer} className="w-full h-full rounded-2xl overflow-hidden" />
       
       {mode === 'setup' && (
-        <div className="absolute top-4 left-4 right-4">
+        <div className="absolute top-4 left-4 right-4 z-10">
           <div className="glass-card p-4 text-center">
             {setupStep === 'start' && (
               <p className="text-sm font-medium">
