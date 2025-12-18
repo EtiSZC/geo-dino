@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { MusicReward, MUSIC_GENRES } from '@/types/app';
 import { createJourneyWithRoute } from '@/lib/geoUtils';
 import { getRandomTrack } from '@/lib/musicDatabase';
+import { supabase } from '@/integrations/supabase/client';
 
 type AppView = 'home' | 'genre' | 'setup-journey' | 'active-journey' | 'rewards';
 
@@ -67,17 +68,33 @@ export default function Index() {
   }, [updatePosition]);
 
   // Handle journey completion
-  const handleJourneyComplete = useCallback(() => {
+  const handleJourneyComplete = useCallback(async () => {
     if (!state.user.currentJourney || !state.user.selectedGenre) return;
 
     const track = getRandomTrack(state.user.selectedGenre);
+    
+    // Fetch accurate Deezer URL from API
+    let deezerUrl = track.deezerUrl;
+    try {
+      const { data, error } = await supabase.functions.invoke('search-deezer', {
+        body: { title: track.title, artist: track.artist }
+      });
+      
+      if (!error && data?.found && data.deezerUrl) {
+        deezerUrl = data.deezerUrl;
+        console.log(`Found accurate Deezer link: ${deezerUrl}`);
+      }
+    } catch (err) {
+      console.error('Error fetching Deezer URL:', err);
+    }
+    
     const reward: MusicReward = {
       id: `reward-${Date.now()}`,
       title: track.title,
       artist: track.artist,
       genre: state.user.selectedGenre,
       spotifyUrl: track.spotifyUrl,
-      deezerUrl: track.deezerUrl,
+      deezerUrl: deezerUrl,
       appleMusicUrl: track.appleMusicUrl,
       earnedAt: new Date(),
       journeyId: state.user.currentJourney.id,
