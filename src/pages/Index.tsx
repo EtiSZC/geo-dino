@@ -34,22 +34,33 @@ export default function Index() {
   const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
-  // Watch user position
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+
+  // Watch user position with high accuracy
   useEffect(() => {
     if (!state.isJourneyActive) return;
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        updatePosition([position.coords.longitude, position.coords.latitude]);
-        setGpsError(null);
+        const accuracy = position.coords.accuracy;
+        setGpsAccuracy(accuracy);
+        
+        // Only accept readings with reasonable accuracy (< 30m)
+        if (accuracy < 30) {
+          updatePosition([position.coords.longitude, position.coords.latitude]);
+          setGpsError(null);
+        } else {
+          setGpsError(`Low GPS accuracy: ${Math.round(accuracy)}m. Move to open area.`);
+        }
       },
       (error) => {
         setGpsError(error.message);
+        setGpsAccuracy(null);
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 1000,
-        timeout: 5000,
+        maximumAge: 0, // Always get fresh position
+        timeout: 10000, // Allow more time for accurate fix
       }
     );
 
@@ -197,14 +208,19 @@ export default function Index() {
               mode="active"
             />
             
-            {/* GPS error */}
-            {gpsError && (
-              <div className="absolute top-4 left-4 right-4 z-10">
-                <div className="glass-card p-3 text-center text-destructive text-sm">
-                  GPS Error: {gpsError}
+            {/* GPS status */}
+            <div className="absolute top-4 left-4 right-4 z-10 space-y-2">
+              {gpsAccuracy !== null && !gpsError && (
+                <div className="glass-card p-2 text-center text-xs text-muted-foreground">
+                  GPS accuracy: {Math.round(gpsAccuracy)}m
                 </div>
-              </div>
-            )}
+              )}
+              {gpsError && (
+                <div className="glass-card p-3 text-center text-destructive text-sm">
+                  {gpsError}
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="p-4">
