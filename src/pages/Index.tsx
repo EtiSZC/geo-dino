@@ -297,6 +297,16 @@ export default function Index() {
                 <Play className="w-5 h-5" />
                 Start Journey
               </Button>
+
+              <Button
+                className="w-full"
+                size="lg"
+                variant="outline"
+                onClick={resetJourney}
+              >
+                <RotateCcw className="w-5 h-5" />
+                Reset Journey
+              </Button>
               
               {!state.user.selectedGenre && (
                 <p className="text-center text-sm text-muted-foreground">
