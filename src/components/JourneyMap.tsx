@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
@@ -32,12 +32,53 @@ export function JourneyMap({
   const startMarker = useRef<mapboxgl.Marker | null>(null);
   const endMarker = useRef<mapboxgl.Marker | null>(null);
 
+  const [mapLoaded, setMapLoaded] = useState(false);
   const [setupStep, setSetupStep] = useState<'start' | 'end' | 'done'>('start');
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
-  const [endCoords, setEndCoords] = useState<[number, number] | null>(null);
+
+  // Helper to safely add route to map
+  const addRouteToMap = useCallback((routeCoords: [number, number][]) => {
+    if (!map.current || !map.current.isStyleLoaded()) return;
+
+    if (map.current.getSource('route')) {
+      map.current.removeLayer('route');
+      map.current.removeSource('route');
+    }
+
+    map.current.addSource('route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates: routeCoords,
+        },
+      },
+    });
+
+    map.current.addLayer({
+      id: 'route',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+      },
+      paint: {
+        'line-color': '#f97316',
+        'line-width': 5,
+        'line-opacity': 0.8,
+      },
+    });
+
+    const bounds = new mapboxgl.LngLatBounds();
+    routeCoords.forEach(coord => bounds.extend(coord));
+    map.current.fitBounds(bounds, { padding: 80 });
+  }, []);
 
   // Fetch pedestrian route from Mapbox Directions API
-  const fetchPedestrianRoute = async (start: [number, number], end: [number, number]) => {
+  const fetchPedestrianRoute = useCallback(async (start: [number, number], end: [number, number]) => {
     const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&access_token=${mapboxToken}`;
     
     try {
@@ -46,48 +87,7 @@ export function JourneyMap({
       
       if (data.routes && data.routes[0]) {
         const routeCoords = data.routes[0].geometry.coordinates as [number, number][];
-        
-        // Draw the route on the map
-        if (map.current) {
-          if (map.current.getSource('route')) {
-            map.current.removeLayer('route');
-            map.current.removeSource('route');
-          }
-
-          map.current.addSource('route', {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: routeCoords,
-              },
-            },
-          });
-
-          map.current.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round',
-            },
-            paint: {
-              'line-color': '#f97316',
-              'line-width': 5,
-              'line-opacity': 0.8,
-            },
-          });
-
-          // Fit bounds to route
-          const bounds = new mapboxgl.LngLatBounds();
-          routeCoords.forEach(coord => bounds.extend(coord));
-          map.current.fitBounds(bounds, { padding: 80 });
-        }
-
-        // Return route for checkpoint generation
+        addRouteToMap(routeCoords);
         if (onRouteCalculated) {
           onRouteCalculated(routeCoords);
         }
@@ -95,7 +95,7 @@ export function JourneyMap({
     } catch (error) {
       console.error('Error fetching route:', error);
     }
-  };
+  }, [mapboxToken, addRouteToMap, onRouteCalculated]);
 
   // Initialize map centered on Paris
   useEffect(() => {
@@ -113,15 +113,20 @@ export function JourneyMap({
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+    map.current.on('load', () => {
+      setMapLoaded(true);
+    });
+
     return () => {
       map.current?.remove();
       map.current = null;
+      setMapLoaded(false);
     };
   }, [mapboxToken]);
 
   // Handle map clicks in setup mode
   useEffect(() => {
-    if (!map.current || mode !== 'setup') return;
+    if (!map.current || mode !== 'setup' || !mapLoaded) return;
 
     const handleClick = (e: mapboxgl.MapMouseEvent) => {
       const coords: [number, number] = [e.lngLat.lng, e.lngLat.lat];
@@ -131,7 +136,6 @@ export function JourneyMap({
         if (onSetStart) onSetStart(coords);
         setSetupStep('end');
         
-        // Add start marker
         if (startMarker.current) startMarker.current.remove();
         const el = document.createElement('div');
         el.className = 'w-8 h-8 rounded-full bg-primary border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
@@ -141,11 +145,9 @@ export function JourneyMap({
           .addTo(map.current!);
           
       } else if (setupStep === 'end') {
-        setEndCoords(coords);
         if (onSetEnd) onSetEnd(coords);
         setSetupStep('done');
         
-        // Add end marker
         if (endMarker.current) endMarker.current.remove();
         const el = document.createElement('div');
         el.className = 'w-8 h-8 rounded-full bg-accent border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
@@ -154,7 +156,6 @@ export function JourneyMap({
           .setLngLat(coords)
           .addTo(map.current!);
 
-        // Calculate route when both points are set
         if (startCoords) {
           fetchPedestrianRoute(startCoords, coords);
         }
@@ -165,11 +166,11 @@ export function JourneyMap({
     return () => {
       map.current?.off('click', handleClick);
     };
-  }, [mode, setupStep, startCoords, onSetStart, onSetEnd, onRouteCalculated, mapboxToken]);
+  }, [mode, setupStep, startCoords, onSetStart, onSetEnd, mapLoaded, fetchPedestrianRoute]);
 
   // Update user position marker
   useEffect(() => {
-    if (!map.current || !currentPosition) return;
+    if (!map.current || !currentPosition || !mapLoaded) return;
 
     if (!userMarker.current) {
       const el = document.createElement('div');
@@ -192,16 +193,15 @@ export function JourneyMap({
         duration: 1000,
       });
     }
-  }, [currentPosition, isActive]);
+  }, [currentPosition, isActive, mapLoaded]);
 
   // Update checkpoint markers when journey exists
   useEffect(() => {
-    if (!map.current || !journey) return;
+    if (!map.current || !journey || !mapLoaded) return;
 
     checkpointMarkers.current.forEach(m => m.remove());
     checkpointMarkers.current = [];
 
-    // Add start marker
     if (startMarker.current) startMarker.current.remove();
     const startEl = document.createElement('div');
     startEl.className = 'w-8 h-8 rounded-full bg-primary border-3 border-white shadow-lg flex items-center justify-center';
@@ -210,7 +210,6 @@ export function JourneyMap({
       .setLngLat(journey.startPoint)
       .addTo(map.current);
 
-    // Add end marker
     if (endMarker.current) endMarker.current.remove();
     const endEl = document.createElement('div');
     endEl.className = 'w-8 h-8 rounded-full bg-accent border-3 border-white shadow-lg flex items-center justify-center';
@@ -219,7 +218,6 @@ export function JourneyMap({
       .setLngLat(journey.endPoint)
       .addTo(map.current);
 
-    // Add checkpoint markers
     journey.checkpoints.forEach((checkpoint, index) => {
       const el = document.createElement('div');
       el.className = cn(
@@ -239,45 +237,10 @@ export function JourneyMap({
       checkpointMarkers.current.push(marker);
     });
 
-    // Draw route if we have the route coordinates stored
-    if (journey.routeCoordinates && map.current) {
-      if (map.current.getSource('route')) {
-        map.current.removeLayer('route');
-        map.current.removeSource('route');
-      }
-
-      map.current.addSource('route', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: journey.routeCoordinates,
-          },
-        },
-      });
-
-      map.current.addLayer({
-        id: 'route',
-        type: 'line',
-        source: 'route',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': '#f97316',
-          'line-width': 5,
-          'line-opacity': 0.8,
-        },
-      });
-
-      const bounds = new mapboxgl.LngLatBounds();
-      journey.routeCoordinates.forEach(coord => bounds.extend(coord as [number, number]));
-      map.current.fitBounds(bounds, { padding: 80 });
+    if (journey.routeCoordinates) {
+      addRouteToMap(journey.routeCoordinates);
     }
-  }, [journey]);
+  }, [journey, mapLoaded, addRouteToMap]);
 
   return (
     <div className="absolute inset-0">
