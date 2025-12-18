@@ -19,7 +19,62 @@ export function calculateDistance(
   return R * c;
 }
 
-// Generate random checkpoints along a route
+// Generate checkpoints along an actual route path
+export function generateCheckpointsAlongRoute(
+  routeCoordinates: [number, number][],
+  count: number = 5
+): Checkpoint[] {
+  if (routeCoordinates.length < 2) return [];
+  
+  const checkpoints: Checkpoint[] = [];
+  
+  // Calculate total route distance
+  let totalDistance = 0;
+  const distances: number[] = [0];
+  
+  for (let i = 1; i < routeCoordinates.length; i++) {
+    const segmentDistance = calculateDistance(routeCoordinates[i - 1], routeCoordinates[i]);
+    totalDistance += segmentDistance;
+    distances.push(totalDistance);
+  }
+  
+  // Place checkpoints at evenly spaced intervals along the route
+  for (let i = 0; i < count; i++) {
+    // Calculate target distance (evenly distributed, avoiding start and end)
+    const targetDistance = totalDistance * ((i + 1) / (count + 1));
+    
+    // Find the segment containing this distance
+    let segmentIndex = 0;
+    for (let j = 1; j < distances.length; j++) {
+      if (distances[j] >= targetDistance) {
+        segmentIndex = j - 1;
+        break;
+      }
+    }
+    
+    // Interpolate position within the segment
+    const segmentStart = distances[segmentIndex];
+    const segmentEnd = distances[segmentIndex + 1];
+    const segmentLength = segmentEnd - segmentStart;
+    const t = segmentLength > 0 ? (targetDistance - segmentStart) / segmentLength : 0;
+    
+    const startCoord = routeCoordinates[segmentIndex];
+    const endCoord = routeCoordinates[segmentIndex + 1] || startCoord;
+    
+    const lng = startCoord[0] + (endCoord[0] - startCoord[0]) * t;
+    const lat = startCoord[1] + (endCoord[1] - startCoord[1]) * t;
+    
+    checkpoints.push({
+      id: `checkpoint-${Date.now()}-${i}`,
+      coordinates: [lng, lat],
+      validated: false,
+    });
+  }
+  
+  return checkpoints;
+}
+
+// Legacy: Generate random checkpoints between two points (fallback)
 export function generateCheckpoints(
   startPoint: [number, number],
   endPoint: [number, number],
@@ -28,12 +83,10 @@ export function generateCheckpoints(
   const checkpoints: Checkpoint[] = [];
   
   for (let i = 0; i < count; i++) {
-    // Generate points at intervals along the route with some random offset
     const t = (i + 1) / (count + 1);
     const baseLng = startPoint[0] + (endPoint[0] - startPoint[0]) * t;
     const baseLat = startPoint[1] + (endPoint[1] - startPoint[1]) * t;
     
-    // Add small random offset (roughly 5-50 meters)
     const offsetLng = (Math.random() - 0.5) * 0.0005;
     const offsetLat = (Math.random() - 0.5) * 0.0005;
     
@@ -57,7 +110,25 @@ export function isWithinCheckpoint(
   return distance <= thresholdMeters;
 }
 
-// Create a new journey
+// Create a new journey with route coordinates
+export function createJourneyWithRoute(
+  name: string,
+  startPoint: [number, number],
+  endPoint: [number, number],
+  routeCoordinates: [number, number][]
+): Journey {
+  return {
+    id: `journey-${Date.now()}`,
+    name,
+    startPoint,
+    endPoint,
+    checkpoints: generateCheckpointsAlongRoute(routeCoordinates, 5),
+    routeCoordinates,
+    createdAt: new Date(),
+  };
+}
+
+// Create a new journey (fallback without route)
 export function createJourney(
   name: string,
   startPoint: [number, number],

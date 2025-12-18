@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { MapPin, Navigation } from 'lucide-react';
 
 interface JourneyMapProps {
   mapboxToken: string;
@@ -14,6 +11,7 @@ interface JourneyMapProps {
   isActive: boolean;
   onSetStart?: (coords: [number, number]) => void;
   onSetEnd?: (coords: [number, number]) => void;
+  onRouteCalculated?: (route: [number, number][]) => void;
   mode: 'setup' | 'active' | 'view';
 }
 
@@ -24,6 +22,7 @@ export function JourneyMap({
   isActive,
   onSetStart,
   onSetEnd,
+  onRouteCalculated,
   mode,
 }: JourneyMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -32,13 +31,73 @@ export function JourneyMap({
   const checkpointMarkers = useRef<mapboxgl.Marker[]>([]);
   const startMarker = useRef<mapboxgl.Marker | null>(null);
   const endMarker = useRef<mapboxgl.Marker | null>(null);
-  const startGeocoderContainer = useRef<HTMLDivElement>(null);
-  const endGeocoderContainer = useRef<HTMLDivElement>(null);
 
-  const [startAddress, setStartAddress] = useState<string>('');
-  const [endAddress, setEndAddress] = useState<string>('');
+  const [setupStep, setSetupStep] = useState<'start' | 'end' | 'done'>('start');
+  const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
+  const [endCoords, setEndCoords] = useState<[number, number] | null>(null);
 
-  // Initialize map
+  // Fetch pedestrian route from Mapbox Directions API
+  const fetchPedestrianRoute = async (start: [number, number], end: [number, number]) => {
+    const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&access_token=${mapboxToken}`;
+    
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.routes && data.routes[0]) {
+        const routeCoords = data.routes[0].geometry.coordinates as [number, number][];
+        
+        // Draw the route on the map
+        if (map.current) {
+          if (map.current.getSource('route')) {
+            map.current.removeLayer('route');
+            map.current.removeSource('route');
+          }
+
+          map.current.addSource('route', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: routeCoords,
+              },
+            },
+          });
+
+          map.current.addLayer({
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
+            paint: {
+              'line-color': '#f97316',
+              'line-width': 5,
+              'line-opacity': 0.8,
+            },
+          });
+
+          // Fit bounds to route
+          const bounds = new mapboxgl.LngLatBounds();
+          routeCoords.forEach(coord => bounds.extend(coord));
+          map.current.fitBounds(bounds, { padding: 80 });
+        }
+
+        // Return route for checkpoint generation
+        if (onRouteCalculated) {
+          onRouteCalculated(routeCoords);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching route:', error);
+    }
+  };
+
+  // Initialize map centered on Paris
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
@@ -47,20 +106,12 @@ export function JourneyMap({
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/dark-v11',
-      center: currentPosition || [2.3522, 48.8566],
-      zoom: 14,
+      center: [2.3522, 48.8566], // Paris center
+      zoom: 13,
       pitch: 45,
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    map.current.addControl(
-      new mapboxgl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: true,
-        showUserHeading: true,
-      }),
-      'top-right'
-    );
 
     return () => {
       map.current?.remove();
@@ -68,68 +119,53 @@ export function JourneyMap({
     };
   }, [mapboxToken]);
 
-  // Initialize geocoders for setup mode
+  // Handle map clicks in setup mode
   useEffect(() => {
     if (!map.current || mode !== 'setup') return;
 
-    // Start geocoder
-    if (startGeocoderContainer.current && onSetStart) {
-      const startGeocoder = new MapboxGeocoder({
-        accessToken: mapboxToken,
-        mapboxgl: mapboxgl as any,
-        placeholder: 'Search starting point...',
-        marker: false,
-      });
-
-      startGeocoder.on('result', (e) => {
-        const coords: [number, number] = e.result.center;
-        onSetStart(coords);
-        setStartAddress(e.result.place_name);
+    const handleClick = (e: mapboxgl.MapMouseEvent) => {
+      const coords: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+      
+      if (setupStep === 'start') {
+        setStartCoords(coords);
+        if (onSetStart) onSetStart(coords);
+        setSetupStep('end');
         
+        // Add start marker
         if (startMarker.current) startMarker.current.remove();
         const el = document.createElement('div');
-        el.className = 'w-6 h-6 rounded-full bg-primary border-2 border-primary-foreground shadow-lg flex items-center justify-center';
-        el.innerHTML = '<span class="text-xs font-bold text-primary-foreground">S</span>';
+        el.className = 'w-8 h-8 rounded-full bg-primary border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
+        el.innerHTML = '<span class="text-sm font-bold text-white">S</span>';
         startMarker.current = new mapboxgl.Marker(el)
           .setLngLat(coords)
           .addTo(map.current!);
+          
+      } else if (setupStep === 'end') {
+        setEndCoords(coords);
+        if (onSetEnd) onSetEnd(coords);
+        setSetupStep('done');
         
-        map.current?.flyTo({ center: coords, zoom: 15 });
-      });
-
-      startGeocoderContainer.current.innerHTML = '';
-      startGeocoderContainer.current.appendChild(startGeocoder.onAdd(map.current));
-    }
-
-    // End geocoder
-    if (endGeocoderContainer.current && onSetEnd) {
-      const endGeocoder = new MapboxGeocoder({
-        accessToken: mapboxToken,
-        mapboxgl: mapboxgl as any,
-        placeholder: 'Search destination...',
-        marker: false,
-      });
-
-      endGeocoder.on('result', (e) => {
-        const coords: [number, number] = e.result.center;
-        onSetEnd(coords);
-        setEndAddress(e.result.place_name);
-        
+        // Add end marker
         if (endMarker.current) endMarker.current.remove();
         const el = document.createElement('div');
-        el.className = 'w-6 h-6 rounded-full bg-accent border-2 border-accent-foreground shadow-lg flex items-center justify-center';
-        el.innerHTML = '<span class="text-xs font-bold text-accent-foreground">E</span>';
+        el.className = 'w-8 h-8 rounded-full bg-accent border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
+        el.innerHTML = '<span class="text-sm font-bold text-white">E</span>';
         endMarker.current = new mapboxgl.Marker(el)
           .setLngLat(coords)
           .addTo(map.current!);
-        
-        map.current?.flyTo({ center: coords, zoom: 15 });
-      });
 
-      endGeocoderContainer.current.innerHTML = '';
-      endGeocoderContainer.current.appendChild(endGeocoder.onAdd(map.current));
-    }
-  }, [mode, mapboxToken, onSetStart, onSetEnd]);
+        // Calculate route when both points are set
+        if (startCoords) {
+          fetchPedestrianRoute(startCoords, coords);
+        }
+      }
+    };
+
+    map.current.on('click', handleClick);
+    return () => {
+      map.current?.off('click', handleClick);
+    };
+  }, [mode, setupStep, startCoords, onSetStart, onSetEnd, onRouteCalculated, mapboxToken]);
 
   // Update user position marker
   useEffect(() => {
@@ -158,24 +194,43 @@ export function JourneyMap({
     }
   }, [currentPosition, isActive]);
 
-  // Update checkpoint markers
+  // Update checkpoint markers when journey exists
   useEffect(() => {
     if (!map.current || !journey) return;
 
     checkpointMarkers.current.forEach(m => m.remove());
     checkpointMarkers.current = [];
 
+    // Add start marker
+    if (startMarker.current) startMarker.current.remove();
+    const startEl = document.createElement('div');
+    startEl.className = 'w-8 h-8 rounded-full bg-primary border-3 border-white shadow-lg flex items-center justify-center';
+    startEl.innerHTML = '<span class="text-sm font-bold text-white">S</span>';
+    startMarker.current = new mapboxgl.Marker(startEl)
+      .setLngLat(journey.startPoint)
+      .addTo(map.current);
+
+    // Add end marker
+    if (endMarker.current) endMarker.current.remove();
+    const endEl = document.createElement('div');
+    endEl.className = 'w-8 h-8 rounded-full bg-accent border-3 border-white shadow-lg flex items-center justify-center';
+    endEl.innerHTML = '<span class="text-sm font-bold text-white">E</span>';
+    endMarker.current = new mapboxgl.Marker(endEl)
+      .setLngLat(journey.endPoint)
+      .addTo(map.current);
+
+    // Add checkpoint markers
     journey.checkpoints.forEach((checkpoint, index) => {
       const el = document.createElement('div');
       el.className = cn(
-        'w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all duration-300',
+        'w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300',
         checkpoint.validated
           ? 'bg-success checkpoint-validated'
           : 'bg-muted border-2 border-border'
       );
       el.innerHTML = checkpoint.validated
-        ? '<svg class="w-5 h-5 text-success-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
-        : `<span class="text-xs font-bold text-muted-foreground">${index + 1}</span>`;
+        ? '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>'
+        : `<span class="text-sm font-bold text-muted-foreground">${index + 1}</span>`;
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat(checkpoint.coordinates)
@@ -184,47 +239,44 @@ export function JourneyMap({
       checkpointMarkers.current.push(marker);
     });
 
-    if (map.current.getSource('route')) {
-      map.current.removeLayer('route');
-      map.current.removeSource('route');
-    }
+    // Draw route if we have the route coordinates stored
+    if (journey.routeCoordinates && map.current) {
+      if (map.current.getSource('route')) {
+        map.current.removeLayer('route');
+        map.current.removeSource('route');
+      }
 
-    const routeCoords = [
-      journey.startPoint,
-      ...journey.checkpoints.map(cp => cp.coordinates),
-      journey.endPoint,
-    ];
-
-    map.current.addSource('route', {
-      type: 'geojson',
-      data: {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates: routeCoords,
+      map.current.addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: journey.routeCoordinates,
+          },
         },
-      },
-    });
+      });
 
-    map.current.addLayer({
-      id: 'route',
-      type: 'line',
-      source: 'route',
-      layout: {
-        'line-join': 'round',
-        'line-cap': 'round',
-      },
-      paint: {
-        'line-color': '#f97316',
-        'line-width': 4,
-        'line-opacity': 0.8,
-      },
-    });
+      map.current.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': '#f97316',
+          'line-width': 5,
+          'line-opacity': 0.8,
+        },
+      });
 
-    const bounds = new mapboxgl.LngLatBounds();
-    routeCoords.forEach(coord => bounds.extend(coord as [number, number]));
-    map.current.fitBounds(bounds, { padding: 80 });
+      const bounds = new mapboxgl.LngLatBounds();
+      journey.routeCoordinates.forEach(coord => bounds.extend(coord as [number, number]));
+      map.current.fitBounds(bounds, { padding: 80 });
+    }
   }, [journey]);
 
   return (
@@ -232,22 +284,22 @@ export function JourneyMap({
       <div ref={mapContainer} className="absolute inset-0 rounded-2xl overflow-hidden" />
       
       {mode === 'setup' && (
-        <div className="absolute top-4 left-4 right-4 space-y-2">
-          <div className="glass-card p-3 space-y-3">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-              <div ref={startGeocoderContainer} className="flex-1 geocoder-container" />
-            </div>
-            {startAddress && (
-              <p className="text-xs text-muted-foreground pl-6 truncate">{startAddress}</p>
+        <div className="absolute top-4 left-4 right-4">
+          <div className="glass-card p-4 text-center">
+            {setupStep === 'start' && (
+              <p className="text-sm font-medium">
+                📍 Tap on the map to set your <span className="text-primary font-bold">starting point</span>
+              </p>
             )}
-            
-            <div className="flex items-center gap-2">
-              <Navigation className="w-4 h-4 text-accent flex-shrink-0" />
-              <div ref={endGeocoderContainer} className="flex-1 geocoder-container" />
-            </div>
-            {endAddress && (
-              <p className="text-xs text-muted-foreground pl-6 truncate">{endAddress}</p>
+            {setupStep === 'end' && (
+              <p className="text-sm font-medium">
+                🏁 Now tap to set your <span className="text-accent font-bold">destination</span>
+              </p>
+            )}
+            {setupStep === 'done' && (
+              <p className="text-sm font-medium text-success">
+                ✅ Route calculated! Tap "Create Journey" to begin
+              </p>
             )}
           </div>
         </div>
