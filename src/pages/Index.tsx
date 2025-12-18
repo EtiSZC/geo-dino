@@ -274,7 +274,7 @@ export default function Index() {
                   </Button>
                 </div>
 
-                <div className="h-40 rounded-xl overflow-hidden">
+                <div className="h-40 rounded-xl overflow-hidden pointer-events-none">
                   <JourneyMap
                     mapboxToken={state.user.mapboxToken}
                     journey={state.user.currentJourney}
