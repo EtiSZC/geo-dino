@@ -92,6 +92,11 @@ export function useAppState() {
   }, []);
 
   const validateCheckpoint = useCallback((checkpointId: string) => {
+    // Trigger haptic feedback on mobile devices
+    if ('vibrate' in navigator) {
+      navigator.vibrate(200);
+    }
+
     setState(prev => {
       if (!prev.user.currentJourney) return prev;
       
