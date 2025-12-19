@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Flag, Navigation, CheckCircle, Egg } from 'lucide-react';
 import { Journey } from '@/types/app';
 import { isWithinCheckpoint, areAllCheckpointsValidated } from '@/lib/geoUtils';
@@ -25,19 +25,28 @@ export function JourneyTracker({
   const validatedCount = journey.checkpoints.filter(cp => cp.validated).length;
   const totalCount = journey.checkpoints.length;
   const progress = (validatedCount / totalCount) * 100;
+  
+  // Prevent multiple calls to onJourneyComplete
+  const hasCompletedRef = useRef(false);
+  
+  // Reset completion flag when journey changes
+  useEffect(() => {
+    hasCompletedRef.current = false;
+  }, [journey.id]);
 
-  // Check for checkpoint validation - use 10m radius
+  // Check for checkpoint validation - use 15m radius for better mobile GPS accuracy
   useEffect(() => {
     if (!isActive || !currentPosition) return;
 
     journey.checkpoints.forEach(checkpoint => {
-      if (!checkpoint.validated && isWithinCheckpoint(currentPosition, checkpoint.coordinates, 10)) {
+      if (!checkpoint.validated && isWithinCheckpoint(currentPosition, checkpoint.coordinates, 15)) {
         onValidateCheckpoint(checkpoint.id);
       }
     });
 
-    // Check if journey is complete
-    if (areAllCheckpointsValidated(journey)) {
+    // Check if journey is complete - only trigger once
+    if (!hasCompletedRef.current && areAllCheckpointsValidated(journey)) {
+      hasCompletedRef.current = true;
       onJourneyComplete();
     }
   }, [currentPosition, isActive, journey, onValidateCheckpoint, onJourneyComplete]);
@@ -109,7 +118,7 @@ export function JourneyTracker({
                 Œuf #{index + 1}
               </p>
               <p className="text-xs text-muted-foreground">
-                {checkpoint.validated ? 'Trouvé ! 🎉' : 'Approche-toi (10m)'}
+                {checkpoint.validated ? 'Trouvé ! 🎉' : 'Approche-toi (15m)'}
               </p>
             </div>
             {checkpoint.validated && (

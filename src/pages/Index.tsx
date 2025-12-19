@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { MapPin, Egg, Play, ChevronRight, RotateCcw, Loader2 } from 'lucide-react';
 import { useAppState } from '@/hooks/useAppState';
 import { DinoSelector } from '@/components/DinoSelector';
@@ -92,13 +92,21 @@ export default function Index() {
     );
   }, [updatePosition]);
 
+  // Prevent multiple completions
+  const isCompletingRef = useRef(false);
+
   // Handle journey completion - generate dinosaur
   const handleJourneyComplete = useCallback(async () => {
+    // Guard against multiple calls
+    if (isCompletingRef.current) return;
     if (!state.user.currentJourney || !state.user.selectedDinoType) return;
+    
+    isCompletingRef.current = true;
 
     const dinoType = state.user.selectedDinoType;
     const dinoTypeName = DINO_TYPES.find(d => d.id === dinoType)?.name || dinoType;
     const dinoName = getRandomDinoName();
+    const journeyId = state.user.currentJourney.id;
 
     // Create initial reward (without image yet)
     const reward: DinoReward = {
@@ -107,7 +115,7 @@ export default function Index() {
       dinoType,
       imageUrl: '', // Will be filled after generation
       earnedAt: new Date(),
-      journeyId: state.user.currentJourney.id,
+      journeyId,
     };
 
     setShowReward(reward);
@@ -133,7 +141,11 @@ export default function Index() {
       setIsGeneratingDino(false);
     }
 
+    // Add to collection AFTER generation (with or without image)
     addDinoReward(reward);
+    
+    // Reset completion guard for next journey
+    isCompletingRef.current = false;
   }, [state.user.currentJourney, state.user.selectedDinoType, addDinoReward]);
 
   // Handle creating journey after route is calculated
