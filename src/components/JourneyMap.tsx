@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { Search, MapPin, Map, Satellite } from 'lucide-react';
+import { Search, MapPin, Map, Satellite, MapPinOff, Loader2 } from 'lucide-react';
 
 interface GeocodingResult {
   id: string;
@@ -45,9 +45,11 @@ export function JourneyMap({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(true);
   const [mapStyle, setMapStyle] = useState<'satellite' | 'default'>('satellite');
   const [localPosition, setLocalPosition] = useState<[number, number] | null>(null);
+  const [gpsUnavailable, setGpsUnavailable] = useState(false);
+  const initialPositionSet = useRef(false);
 
   // Use either passed currentPosition or locally fetched position
   const effectivePosition = currentPosition || localPosition;
@@ -212,17 +214,18 @@ export function JourneyMap({
     }
   }, [onSetEnd, startCoords, fetchPedestrianRoute]);
 
-  // Initialize map and auto-center on user location in setup mode
+  // Initialize map and auto-center on user location
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
     mapboxgl.accessToken = mapboxToken;
 
+    // Start with a neutral center, will be updated with user location
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: [2.3522, 48.8566], // Default center (Paris)
-      zoom: 13,
+      center: [0, 0],
+      zoom: 2,
       pitch: 45,
     });
 
@@ -230,25 +233,6 @@ export function JourneyMap({
 
     map.current.on('load', () => {
       setMapLoaded(true);
-      
-      // Auto-center on user location in setup mode
-      if (mode === 'setup') {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
-            setLocalPosition(coords);
-            map.current?.flyTo({
-              center: coords,
-              zoom: 15,
-              duration: 1000,
-            });
-          },
-          (error) => {
-            console.error('Geolocation error:', error);
-          },
-          { enableHighAccuracy: true, timeout: 10000 }
-        );
-      }
     });
 
     return () => {
@@ -256,7 +240,61 @@ export function JourneyMap({
       map.current = null;
       setMapLoaded(false);
     };
-  }, [mapboxToken, mode]);
+  }, [mapboxToken]);
+
+  // Auto-center on user location for all modes
+  useEffect(() => {
+    if (!mapLoaded || initialPositionSet.current) return;
+
+    // If we have a position from props or journey, use that
+    if (currentPosition) {
+      initialPositionSet.current = true;
+      setGpsUnavailable(false);
+      setIsGettingLocation(false);
+      map.current?.flyTo({
+        center: currentPosition,
+        zoom: 15,
+        duration: 1000,
+      });
+      return;
+    }
+
+    // If we have a journey, center on that
+    if (journey) {
+      initialPositionSet.current = true;
+      setGpsUnavailable(false);
+      setIsGettingLocation(false);
+      const bounds = new mapboxgl.LngLatBounds();
+      bounds.extend(journey.startPoint);
+      bounds.extend(journey.endPoint);
+      journey.checkpoints.forEach(cp => bounds.extend(cp.coordinates));
+      map.current?.fitBounds(bounds, { padding: 80, duration: 1000 });
+      return;
+    }
+
+    // Otherwise try to get user location
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
+        setLocalPosition(coords);
+        setGpsUnavailable(false);
+        setIsGettingLocation(false);
+        initialPositionSet.current = true;
+        map.current?.flyTo({
+          center: coords,
+          zoom: 15,
+          duration: 1000,
+        });
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setGpsUnavailable(true);
+        setIsGettingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, [mapLoaded, currentPosition, journey]);
 
   // Handle map clicks in setup mode
   useEffect(() => {
@@ -411,6 +449,60 @@ export function JourneyMap({
   return (
     <div className="absolute inset-0">
       <div ref={mapContainer} className="w-full h-full rounded-2xl overflow-hidden" />
+      
+      {/* Loading indicator */}
+      {isGettingLocation && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-20 rounded-2xl">
+          <div className="glass-card p-6 text-center space-y-3">
+            <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
+            <p className="text-sm font-medium">Localisation en cours...</p>
+          </div>
+        </div>
+      )}
+      
+      {/* GPS unavailable message */}
+      {gpsUnavailable && !journey && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-20 rounded-2xl">
+          <div className="glass-card p-6 text-center space-y-4 max-w-xs">
+            <MapPinOff className="w-12 h-12 text-destructive mx-auto" />
+            <div className="space-y-2">
+              <p className="font-semibold text-lg">GPS non disponible</p>
+              <p className="text-sm text-muted-foreground">
+                Active la localisation dans les paramètres de ton appareil pour utiliser la carte.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setGpsUnavailable(false);
+                setIsGettingLocation(true);
+                initialPositionSet.current = false;
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
+                    setLocalPosition(coords);
+                    setGpsUnavailable(false);
+                    setIsGettingLocation(false);
+                    initialPositionSet.current = true;
+                    map.current?.flyTo({
+                      center: coords,
+                      zoom: 15,
+                      duration: 1000,
+                    });
+                  },
+                  () => {
+                    setGpsUnavailable(true);
+                    setIsGettingLocation(false);
+                  },
+                  { enableHighAccuracy: true, timeout: 10000 }
+                );
+              }}
+              className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Map style toggle button */}
       <button
