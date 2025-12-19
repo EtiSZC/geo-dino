@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Flag, Navigation, CheckCircle, Egg } from 'lucide-react';
 import { Journey } from '@/types/app';
 import { isWithinCheckpoint, areAllCheckpointsValidated } from '@/lib/geoUtils';
+import { celebrateEggFound } from '@/lib/celebrationFeedback';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,8 @@ export function JourneyTracker({
 
     journey.checkpoints.forEach(checkpoint => {
       if (!checkpoint.validated && isWithinCheckpoint(currentPosition, checkpoint.coordinates, 15)) {
+        // Trigger celebration feedback
+        celebrateEggFound();
         onValidateCheckpoint(checkpoint.id);
       }
     });
