@@ -26,12 +26,12 @@ export function JourneyTracker({
   const totalCount = journey.checkpoints.length;
   const progress = (validatedCount / totalCount) * 100;
 
-  // Check for checkpoint validation - use 15m radius for mobile GPS accuracy
+  // Check for checkpoint validation - use 10m radius
   useEffect(() => {
     if (!isActive || !currentPosition) return;
 
     journey.checkpoints.forEach(checkpoint => {
-      if (!checkpoint.validated && isWithinCheckpoint(currentPosition, checkpoint.coordinates, 15)) {
+      if (!checkpoint.validated && isWithinCheckpoint(currentPosition, checkpoint.coordinates, 10)) {
         onValidateCheckpoint(checkpoint.id);
       }
     });
@@ -109,7 +109,7 @@ export function JourneyTracker({
                 Œuf #{index + 1}
               </p>
               <p className="text-xs text-muted-foreground">
-                {checkpoint.validated ? 'Trouvé ! 🎉' : 'Approche-toi (15m)'}
+                {checkpoint.validated ? 'Trouvé ! 🎉' : 'Approche-toi (10m)'}
               </p>
             </div>
             {checkpoint.validated && (
