@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Flag, Navigation, CheckCircle } from 'lucide-react';
+import { Flag, Navigation, CheckCircle, Egg } from 'lucide-react';
 import { Journey } from '@/types/app';
 import { isWithinCheckpoint, areAllCheckpointsValidated } from '@/lib/geoUtils';
 import { Button } from '@/components/ui/button';
@@ -59,14 +59,14 @@ export function JourneyTracker({
           <div>
             <h3 className="font-semibold">{journey.name}</h3>
             <p className="text-sm text-muted-foreground">
-              {validatedCount} of {totalCount} checkpoints
+              {validatedCount} sur {totalCount} œufs trouvés
             </p>
           </div>
         </div>
         
         {isActive && (
           <Button variant="outline" size="sm" onClick={onStop}>
-            Stop
+            Arrêter
           </Button>
         )}
       </div>
@@ -74,12 +74,12 @@ export function JourneyTracker({
       {/* Progress bar */}
       <div className="relative h-2 bg-secondary rounded-full overflow-hidden">
         <div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-success rounded-full transition-all duration-500"
+          className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-success rounded-full transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      {/* Checkpoint list */}
+      {/* Checkpoint list - as eggs */}
       <div className="space-y-2">
         {journey.checkpoints.map((checkpoint, index) => (
           <div
@@ -93,12 +93,12 @@ export function JourneyTracker({
               "w-8 h-8 rounded-full flex items-center justify-center transition-all",
               checkpoint.validated
                 ? "bg-success text-success-foreground checkpoint-validated"
-                : "bg-muted text-muted-foreground"
+                : "bg-amber-500/20 text-amber-600"
             )}>
               {checkpoint.validated ? (
                 <CheckCircle className="w-5 h-5" />
               ) : (
-                <span className="text-sm font-bold">{index + 1}</span>
+                <Egg className="w-4 h-4" />
               )}
             </div>
             <div className="flex-1">
@@ -106,14 +106,14 @@ export function JourneyTracker({
                 "text-sm font-medium",
                 checkpoint.validated ? "text-success" : "text-foreground"
               )}>
-                Checkpoint {index + 1}
+                Œuf #{index + 1}
               </p>
               <p className="text-xs text-muted-foreground">
-                {checkpoint.validated ? 'Validated!' : 'Reach within 15m'}
+                {checkpoint.validated ? 'Trouvé ! 🎉' : 'Approche-toi (15m)'}
               </p>
             </div>
             {checkpoint.validated && (
-              <Flag className="w-5 h-5 text-success" />
+              <span className="text-xl">🥚</span>
             )}
           </div>
         ))}

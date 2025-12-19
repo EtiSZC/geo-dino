@@ -1,40 +1,53 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, Music, Play, ChevronRight, RotateCcw } from 'lucide-react';
+import { MapPin, Egg, Play, ChevronRight, RotateCcw, Loader2 } from 'lucide-react';
 import { useAppState } from '@/hooks/useAppState';
-import { GenreSelector } from '@/components/GenreSelector';
+import { DinoSelector } from '@/components/DinoSelector';
 import { JourneyMap } from '@/components/JourneyMap';
 import { JourneyTracker } from '@/components/JourneyTracker';
-import { RewardScreen } from '@/components/RewardScreen';
-import { RewardsHistory } from '@/components/RewardsHistory';
+import { DinoRewardScreen } from '@/components/DinoRewardScreen';
+import { DinoHistory } from '@/components/DinoHistory';
 import { Button } from '@/components/ui/button';
-import { MusicReward, MUSIC_GENRES } from '@/types/app';
+import { DinoReward, DINO_TYPES } from '@/types/app';
 import { createJourneyWithRoute } from '@/lib/geoUtils';
-import { getRandomTrack } from '@/lib/musicDatabase';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-type AppView = 'home' | 'genre' | 'setup-journey' | 'active-journey' | 'rewards';
+type AppView = 'home' | 'dino-type' | 'setup-journey' | 'active-journey' | 'collection';
+
+// Dinosaur name generator for kids
+const DINO_NAMES = [
+  'Rex', 'Tricot', 'Rapido', 'Spike', 'Aile', 'Géant', 'Bouclier', 'Nageoire',
+  'Dino', 'Gros-Dodo', 'Flash', 'Croc', 'Queue-Pointe', 'Petit-Pas', 'Grognon',
+  'Éclair', 'Tonnerre', 'Plume', 'Corne', 'Gentil', 'Câlin', 'Bisou', 'Étoile'
+];
+
+const getRandomDinoName = () => {
+  const adjectives = ['Petit', 'Grand', 'Super', 'Méga', 'Mini', 'Joli', 'Mignon'];
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const name = DINO_NAMES[Math.floor(Math.random() * DINO_NAMES.length)];
+  return `${adj} ${name}`;
+};
 
 export default function Index() {
   const {
     state,
-    setGenre,
+    setDinoType,
     setJourney,
     startJourney,
     stopJourney,
     updatePosition,
     validateCheckpoint,
-    addReward,
+    addDinoReward,
     resetJourney,
   } = useAppState();
 
   const [view, setView] = useState<AppView>('home');
-  const [showReward, setShowReward] = useState<MusicReward | null>(null);
+  const [showReward, setShowReward] = useState<DinoReward | null>(null);
+  const [isGeneratingDino, setIsGeneratingDino] = useState(false);
   const [startPoint, setStartPoint] = useState<[number, number] | null>(null);
   const [endPoint, setEndPoint] = useState<[number, number] | null>(null);
   const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
-
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
 
   // Watch user position with high accuracy
@@ -46,12 +59,11 @@ export default function Index() {
         const accuracy = position.coords.accuracy;
         setGpsAccuracy(accuracy);
         
-        // Only accept readings with reasonable accuracy (< 30m)
         if (accuracy < 30) {
           updatePosition([position.coords.longitude, position.coords.latitude]);
           setGpsError(null);
         } else {
-          setGpsError(`Low GPS accuracy: ${Math.round(accuracy)}m. Move to open area.`);
+          setGpsError(`Précision GPS faible : ${Math.round(accuracy)}m. Va dans un endroit dégagé.`);
         }
       },
       (error) => {
@@ -60,8 +72,8 @@ export default function Index() {
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 0, // Always get fresh position
-        timeout: 10000, // Allow more time for accurate fix
+        maximumAge: 0,
+        timeout: 10000,
       }
     );
 
@@ -79,51 +91,58 @@ export default function Index() {
     );
   }, [updatePosition]);
 
-  // Handle journey completion
+  // Handle journey completion - generate dinosaur
   const handleJourneyComplete = useCallback(async () => {
-    if (!state.user.currentJourney || !state.user.selectedGenre) return;
+    if (!state.user.currentJourney || !state.user.selectedDinoType) return;
 
-    const track = getRandomTrack(state.user.selectedGenre);
-    
-    // Fetch accurate Deezer URL from API
-    let deezerUrl = track.deezerUrl;
-    try {
-      const { data, error } = await supabase.functions.invoke('search-deezer', {
-        body: { title: track.title, artist: track.artist }
-      });
-      
-      if (!error && data?.found && data.deezerUrl) {
-        deezerUrl = data.deezerUrl;
-        console.log(`Found accurate Deezer link: ${deezerUrl}`);
-      }
-    } catch (err) {
-      console.error('Error fetching Deezer URL:', err);
-    }
-    
-    const reward: MusicReward = {
-      id: `reward-${Date.now()}`,
-      title: track.title,
-      artist: track.artist,
-      genre: state.user.selectedGenre,
-      spotifyUrl: track.spotifyUrl,
-      deezerUrl: deezerUrl,
-      appleMusicUrl: track.appleMusicUrl,
+    const dinoType = state.user.selectedDinoType;
+    const dinoTypeName = DINO_TYPES.find(d => d.id === dinoType)?.name || dinoType;
+    const dinoName = getRandomDinoName();
+
+    // Create initial reward (without image yet)
+    const reward: DinoReward = {
+      id: `dino-${Date.now()}`,
+      dinoName,
+      dinoType,
+      imageUrl: '', // Will be filled after generation
       earnedAt: new Date(),
       journeyId: state.user.currentJourney.id,
     };
 
     setShowReward(reward);
-    addReward(reward);
-  }, [state.user.currentJourney, state.user.selectedGenre, addReward]);
+    setIsGeneratingDino(true);
+
+    // Generate dinosaur image
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-dinosaur', {
+        body: { dinoType: dinoTypeName, dinoName }
+      });
+
+      if (error) {
+        console.error('Error generating dinosaur:', error);
+        toast.error("Erreur lors de la création du dinosaure");
+      } else if (data?.imageUrl) {
+        reward.imageUrl = data.imageUrl;
+        setShowReward({ ...reward });
+      }
+    } catch (err) {
+      console.error('Error calling generate-dinosaur:', err);
+      toast.error("Impossible de créer le dinosaure");
+    } finally {
+      setIsGeneratingDino(false);
+    }
+
+    addDinoReward(reward);
+  }, [state.user.currentJourney, state.user.selectedDinoType, addDinoReward]);
 
   // Handle creating journey after route is calculated
   const handleCreateJourney = useCallback(() => {
     if (!startPoint || !endPoint || !routeCoords) return;
 
-    const journey = createJourneyWithRoute('My Journey', startPoint, endPoint, routeCoords);
+    const journey = createJourneyWithRoute('Mon Expédition', startPoint, endPoint, routeCoords);
     
     if (journey.checkpoints.length === 0) {
-      toast.error('Route too short! Need at least 200m for waypoints with 100m spacing.');
+      toast.error('Trajet trop court ! Il faut au moins 200m pour placer des œufs.');
       return;
     }
     
@@ -134,16 +153,17 @@ export default function Index() {
     setRouteCoords(null);
   }, [startPoint, endPoint, routeCoords, setJourney]);
 
-  const selectedGenreName = state.user.selectedGenre
-    ? MUSIC_GENRES.find(g => g.id === state.user.selectedGenre)?.name
+  const selectedDinoName = state.user.selectedDinoType
+    ? DINO_TYPES.find(d => d.id === state.user.selectedDinoType)?.name
     : null;
 
   return (
     <div className="min-h-screen bg-background safe-top safe-bottom">
       {/* Reward overlay */}
       {showReward && (
-        <RewardScreen
+        <DinoRewardScreen
           reward={showReward}
+          isGenerating={isGeneratingDino}
           onClose={() => {
             setShowReward(null);
             resetJourney();
@@ -152,18 +172,18 @@ export default function Index() {
         />
       )}
 
-      {/* Genre selection view */}
-      {view === 'genre' && (
+      {/* Dino type selection view */}
+      {view === 'dino-type' && (
         <div className="min-h-screen flex flex-col">
           <header className="p-4 flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={() => setView('home')}>
-              ← Back
+              ← Retour
             </Button>
           </header>
-          <GenreSelector
-            selectedGenre={state.user.selectedGenre}
-            onSelectGenre={(genre) => {
-              setGenre(genre);
+          <DinoSelector
+            selectedDinoType={state.user.selectedDinoType}
+            onSelectDinoType={(dinoType) => {
+              setDinoType(dinoType);
               setView('home');
             }}
           />
@@ -180,11 +200,11 @@ export default function Index() {
               setEndPoint(null);
               setRouteCoords(null);
             }}>
-              ← Back
+              ← Retour
             </Button>
             {startPoint && endPoint && routeCoords && (
               <Button onClick={handleCreateJourney}>
-                Create Journey
+                Créer l'Expédition
               </Button>
             )}
           </header>
@@ -219,7 +239,7 @@ export default function Index() {
             <div className="absolute top-4 left-4 right-4 z-10 space-y-2">
               {gpsAccuracy !== null && !gpsError && (
                 <div className="glass-card p-2 text-center text-xs text-muted-foreground">
-                  GPS accuracy: {Math.round(gpsAccuracy)}m
+                  Précision GPS : {Math.round(gpsAccuracy)}m
                 </div>
               )}
               {gpsError && (
@@ -246,16 +266,16 @@ export default function Index() {
         </div>
       )}
 
-      {/* Rewards view */}
-      {view === 'rewards' && (
+      {/* Collection view */}
+      {view === 'collection' && (
         <div className="min-h-screen flex flex-col">
           <header className="p-4 flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={() => setView('home')}>
-              ← Back
+              ← Retour
             </Button>
           </header>
           <div className="flex-1 p-4">
-            <RewardsHistory rewards={state.user.rewards} />
+            <DinoHistory rewards={state.user.dinoRewards} />
           </div>
         </div>
       )}
@@ -266,28 +286,28 @@ export default function Index() {
           {/* Header */}
           <header className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-primary-foreground" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                <span className="text-2xl">🥚</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold gradient-text">SoundQuest</h1>
-                <p className="text-xs text-muted-foreground">Discover music on the go</p>
+                <h1 className="text-xl font-bold gradient-text">Dino Quest</h1>
+                <p className="text-xs text-muted-foreground">Chasse aux œufs de dinosaure</p>
               </div>
             </div>
           </header>
 
-          {/* Genre selection card */}
+          {/* Dino type selection card */}
           <button
-            onClick={() => setView('genre')}
+            onClick={() => setView('dino-type')}
             className="glass-card p-4 flex items-center gap-4 text-left hover:border-primary/50 transition-colors"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-              <Music className="w-6 h-6 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 flex items-center justify-center">
+              <Egg className="w-6 h-6 text-amber-500" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">Music Genre</p>
+              <p className="text-sm text-muted-foreground">Type de Dinosaure</p>
               <p className="font-semibold">
-                {selectedGenreName || 'Select a genre'}
+                {selectedDinoName || 'Choisis un dinosaure'}
               </p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -299,10 +319,10 @@ export default function Index() {
               <div className="glass-card p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Current Journey</p>
+                    <p className="text-sm text-muted-foreground">Expédition en cours</p>
                     <p className="font-semibold">{state.user.currentJourney.name}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {state.user.currentJourney.checkpoints.filter(c => c.validated).length} / {state.user.currentJourney.checkpoints.length} checkpoints
+                      {state.user.currentJourney.checkpoints.filter(c => c.validated).length} / {state.user.currentJourney.checkpoints.length} œufs trouvés
                     </p>
                   </div>
                   <Button
@@ -328,14 +348,14 @@ export default function Index() {
               <Button
                 className="w-full"
                 size="lg"
-                disabled={!state.user.selectedGenre}
+                disabled={!state.user.selectedDinoType}
                 onClick={() => {
                   startJourney();
                   setView('active-journey');
                 }}
               >
                 <Play className="w-5 h-5" />
-                Start Journey
+                Partir à l'aventure !
               </Button>
 
               <Button
@@ -345,12 +365,12 @@ export default function Index() {
                 onClick={resetJourney}
               >
                 <RotateCcw className="w-5 h-5" />
-                Reset Journey
+                Annuler l'expédition
               </Button>
               
-              {!state.user.selectedGenre && (
+              {!state.user.selectedDinoType && (
                 <p className="text-center text-sm text-muted-foreground">
-                  Select a music genre first
+                  Choisis d'abord un type de dinosaure
                 </p>
               )}
             </div>
@@ -362,23 +382,23 @@ export default function Index() {
               onClick={() => setView('setup-journey')}
             >
               <MapPin className="w-5 h-5" />
-              Define Your Journey
+              Préparer une Expédition
             </Button>
           )}
 
-          {/* Rewards section */}
+          {/* Collection section */}
           <div className="flex-1">
             <button
-              onClick={() => setView('rewards')}
+              onClick={() => setView('collection')}
               className="w-full glass-card p-4 flex items-center gap-4 text-left hover:border-primary/50 transition-colors"
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success/20 to-accent/20 flex items-center justify-center">
-                <span className="text-2xl">🏆</span>
+                <span className="text-2xl">🦕</span>
               </div>
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Your Rewards</p>
+                <p className="text-sm text-muted-foreground">Ta Collection</p>
                 <p className="font-semibold">
-                  {state.user.rewards.length} track{state.user.rewards.length !== 1 ? 's' : ''} discovered
+                  {state.user.dinoRewards.length} dinosaure{state.user.dinoRewards.length !== 1 ? 's' : ''} découvert{state.user.dinoRewards.length !== 1 ? 's' : ''}
                 </p>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -387,7 +407,7 @@ export default function Index() {
 
           {/* Install hint */}
           <p className="text-center text-xs text-muted-foreground">
-            Install this app: Share → Add to Home Screen
+            Installe l'app : Partager → Ajouter à l'écran d'accueil
           </p>
         </div>
       )}
