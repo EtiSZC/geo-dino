@@ -11,6 +11,7 @@ import { DinoReward, DINO_TYPES } from '@/types/app';
 import { createJourneyWithRoute } from '@/lib/geoUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import hatchingEggImg from '@/assets/dinos/hatching-egg.png';
 
 type AppView = 'home' | 'dino-type' | 'setup-journey' | 'active-journey' | 'collection';
 
@@ -392,8 +393,8 @@ export default function Index() {
               onClick={() => setView('collection')}
               className="w-full glass-card p-4 flex items-center gap-4 text-left hover:border-primary/50 transition-colors"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success/20 to-accent/20 flex items-center justify-center">
-                <span className="text-2xl">🦕</span>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success/20 to-accent/20 flex items-center justify-center overflow-hidden">
+                <img src={hatchingEggImg} alt="Collection" className="w-10 h-10 object-contain" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Ta Collection</p>
