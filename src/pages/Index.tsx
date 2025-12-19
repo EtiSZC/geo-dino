@@ -6,6 +6,7 @@ import { JourneyMap } from '@/components/JourneyMap';
 import { JourneyTracker } from '@/components/JourneyTracker';
 import { DinoRewardScreen } from '@/components/DinoRewardScreen';
 import { DinoHistory } from '@/components/DinoHistory';
+import { GpsIndicator } from '@/components/GpsIndicator';
 import { Button } from '@/components/ui/button';
 import { DinoReward, DINO_TYPES } from '@/types/app';
 import { createJourneyWithRoute } from '@/lib/geoUtils';
@@ -248,18 +249,9 @@ export default function Index() {
               mode="active"
             />
             
-            {/* GPS status */}
-            <div className="absolute top-4 left-4 right-4 z-10 space-y-2">
-              {gpsAccuracy !== null && !gpsError && (
-                <div className="glass-card p-2 text-center text-xs text-muted-foreground">
-                  Précision GPS : {Math.round(gpsAccuracy)}m
-                </div>
-              )}
-              {gpsError && (
-                <div className="glass-card p-3 text-center text-destructive text-sm">
-                  {gpsError}
-                </div>
-              )}
+            {/* GPS status indicator */}
+            <div className="absolute top-4 left-4 z-10">
+              <GpsIndicator accuracy={gpsAccuracy} error={gpsError} />
             </div>
           </div>
           
