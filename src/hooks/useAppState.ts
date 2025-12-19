@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AppState, UserProfile, Journey, MusicReward, GenreId } from '@/types/app';
+import { AppState, UserProfile, Journey, DinoReward, DinoTypeId } from '@/types/app';
 
-const STORAGE_KEY = 'soundquest_data';
+const STORAGE_KEY = 'dinoquest_data';
 
 const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXRpc3pjIiwiYSI6ImNtamI5ZG1kMTAwNnczZHNtanY3N2s4bnEifQ.LpEZBQpE3_8MdmdqIPFHEQ';
 
 const defaultUserProfile: UserProfile = {
-  selectedGenre: null,
+  selectedDinoType: null,
   currentJourney: null,
   completedJourneys: [],
-  rewards: [],
+  dinoRewards: [],
   mapboxToken: MAPBOX_TOKEN,
 };
 
@@ -49,10 +49,10 @@ export function useAppState() {
     }
   }, [state.user, state.isJourneyActive]);
 
-  const setGenre = useCallback((genre: GenreId) => {
+  const setDinoType = useCallback((dinoType: DinoTypeId) => {
     setState(prev => ({
       ...prev,
-      user: { ...prev.user, selectedGenre: genre },
+      user: { ...prev.user, selectedDinoType: dinoType },
     }));
   }, []);
 
@@ -119,12 +119,12 @@ export function useAppState() {
     });
   }, []);
 
-  const addReward = useCallback((reward: MusicReward) => {
+  const addDinoReward = useCallback((reward: DinoReward) => {
     setState(prev => ({
       ...prev,
       user: {
         ...prev.user,
-        rewards: [...prev.user.rewards, reward],
+        dinoRewards: [...prev.user.dinoRewards, reward],
         completedJourneys: prev.user.currentJourney
           ? [...prev.user.completedJourneys, prev.user.currentJourney.id]
           : prev.user.completedJourneys,
@@ -143,14 +143,14 @@ export function useAppState() {
 
   return {
     state,
-    setGenre,
+    setDinoType,
     setMapboxToken,
     setJourney,
     startJourney,
     stopJourney,
     updatePosition,
     validateCheckpoint,
-    addReward,
+    addDinoReward,
     resetJourney,
   };
 }
