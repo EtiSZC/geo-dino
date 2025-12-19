@@ -2,6 +2,27 @@ import { DINO_TYPES, DinoTypeId } from '@/types/app';
 import { cn } from '@/lib/utils';
 import { Egg } from 'lucide-react';
 
+// Import all dinosaur images
+import tRexImg from '@/assets/dinos/t-rex.png';
+import triceratopsImg from '@/assets/dinos/triceratops.png';
+import velociraptorImg from '@/assets/dinos/velociraptor.png';
+import stegosaurusImg from '@/assets/dinos/stegosaurus.png';
+import pterodactylImg from '@/assets/dinos/pterodactyl.png';
+import brachiosaurusImg from '@/assets/dinos/brachiosaurus.png';
+import ankylosaurusImg from '@/assets/dinos/ankylosaurus.png';
+import spinosaurusImg from '@/assets/dinos/spinosaurus.png';
+
+const DINO_IMAGES: Record<string, string> = {
+  't-rex': tRexImg,
+  'triceratops': triceratopsImg,
+  'velociraptor': velociraptorImg,
+  'stegosaurus': stegosaurusImg,
+  'pterodactyl': pterodactylImg,
+  'brachiosaurus': brachiosaurusImg,
+  'ankylosaurus': ankylosaurusImg,
+  'spinosaurus': spinosaurusImg,
+};
+
 interface DinoSelectorProps {
   selectedDinoType: DinoTypeId | null;
   onSelectDinoType: (dinoType: DinoTypeId) => void;
@@ -26,18 +47,19 @@ export function DinoSelector({ selectedDinoType, onSelectDinoType }: DinoSelecto
             key={dino.id}
             onClick={() => onSelectDinoType(dino.id)}
             className={cn(
-              "p-4 rounded-xl border-2 transition-all duration-300",
+              "p-3 rounded-xl border-2 transition-all duration-300",
               "flex flex-col items-center gap-2",
               selectedDinoType === dino.id
                 ? "border-primary bg-primary/10 scale-105"
                 : "border-border hover:border-primary/50 bg-card"
             )}
           >
-            <div className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center",
-              `bg-gradient-to-br ${dino.color}`
-            )}>
-              <span className="text-2xl">{dino.emoji}</span>
+            <div className="w-16 h-16 rounded-lg overflow-hidden">
+              <img 
+                src={DINO_IMAGES[dino.id]} 
+                alt={dino.name}
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="font-medium text-sm">{dino.name}</span>
           </button>

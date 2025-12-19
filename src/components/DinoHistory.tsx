@@ -1,6 +1,27 @@
 import { DinoReward, DINO_TYPES } from '@/types/app';
-import { Egg, Trophy } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Import all dinosaur images
+import tRexImg from '@/assets/dinos/t-rex.png';
+import triceratopsImg from '@/assets/dinos/triceratops.png';
+import velociraptorImg from '@/assets/dinos/velociraptor.png';
+import stegosaurusImg from '@/assets/dinos/stegosaurus.png';
+import pterodactylImg from '@/assets/dinos/pterodactyl.png';
+import brachiosaurusImg from '@/assets/dinos/brachiosaurus.png';
+import ankylosaurusImg from '@/assets/dinos/ankylosaurus.png';
+import spinosaurusImg from '@/assets/dinos/spinosaurus.png';
+
+const DINO_IMAGES: Record<string, string> = {
+  't-rex': tRexImg,
+  'triceratops': triceratopsImg,
+  'velociraptor': velociraptorImg,
+  'stegosaurus': stegosaurusImg,
+  'pterodactyl': pterodactylImg,
+  'brachiosaurus': brachiosaurusImg,
+  'ankylosaurus': ankylosaurusImg,
+  'spinosaurus': spinosaurusImg,
+};
 
 interface DinoHistoryProps {
   rewards: DinoReward[];
@@ -55,7 +76,11 @@ export function DinoHistory({ rewards }: DinoHistoryProps) {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-4xl">{dinoType?.emoji}</span>
+                    <img 
+                      src={DINO_IMAGES[reward.dinoType]} 
+                      alt={dinoType?.name}
+                      className="w-16 h-16 object-contain"
+                    />
                   </div>
                 )}
               </div>
@@ -64,7 +89,11 @@ export function DinoHistory({ rewards }: DinoHistoryProps) {
               <div className="text-center">
                 <p className="font-semibold text-sm truncate">{reward.dinoName}</p>
                 <div className="flex items-center justify-center gap-1 mt-1">
-                  <span className="text-sm">{dinoType?.emoji}</span>
+                  <img 
+                    src={DINO_IMAGES[reward.dinoType]} 
+                    alt={dinoType?.name}
+                    className="w-5 h-5 object-contain"
+                  />
                   <span className="text-xs text-muted-foreground">{dinoType?.name}</span>
                 </div>
               </div>
