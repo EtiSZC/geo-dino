@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Flag, Navigation, CheckCircle, Egg } from 'lucide-react';
 import { Journey } from '@/types/app';
 import { isWithinCheckpoint, areAllCheckpointsValidated } from '@/lib/geoUtils';
 import { celebrateEggFound } from '@/lib/celebrationFeedback';
+import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +30,7 @@ export function JourneyTracker({
   
   // Prevent multiple calls to onJourneyComplete
   const hasCompletedRef = useRef(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   
   // Reset completion flag when journey changes
   useEffect(() => {
@@ -43,6 +45,7 @@ export function JourneyTracker({
       if (!checkpoint.validated && isWithinCheckpoint(currentPosition, checkpoint.coordinates, 15)) {
         // Trigger celebration feedback
         celebrateEggFound();
+        setShowConfetti(true);
         onValidateCheckpoint(checkpoint.id);
       }
     });
@@ -55,6 +58,8 @@ export function JourneyTracker({
   }, [currentPosition, isActive, journey, onValidateCheckpoint, onJourneyComplete]);
 
   return (
+    <>
+      {showConfetti && <ConfettiCelebration onComplete={() => setShowConfetti(false)} />}
     <div className="glass-card p-4 space-y-4">
       {/* Progress header */}
       <div className="flex items-center justify-between">
@@ -131,5 +136,6 @@ export function JourneyTracker({
         ))}
       </div>
     </div>
+    </>
   );
 }
