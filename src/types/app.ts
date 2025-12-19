@@ -1,12 +1,12 @@
 // ============= Dinosaur Types for Dino Quest =============
 
 export const DINO_TYPES = [
-  { id: 't-rex', name: 'T-Rex', emoji: '🦖', color: 'from-green-500 to-emerald-600' },
+  { id: 't-rex', name: 'T-Rex', emoji: '🦎', color: 'from-green-500 to-emerald-600' },
   { id: 'triceratops', name: 'Tricératops', emoji: '🦏', color: 'from-blue-500 to-cyan-500' },
   { id: 'velociraptor', name: 'Vélociraptor', emoji: '🐆', color: 'from-orange-500 to-red-500' },
   { id: 'stegosaurus', name: 'Stégosaure', emoji: '🐢', color: 'from-purple-500 to-pink-500' },
   { id: 'pterodactyl', name: 'Ptérodactyle', emoji: '🦇', color: 'from-sky-400 to-blue-500' },
-  { id: 'brachiosaurus', name: 'Brachiosaure', emoji: '🦕', color: 'from-amber-500 to-yellow-500' },
+  { id: 'brachiosaurus', name: 'Brachiosaure', emoji: '🦒', color: 'from-amber-500 to-yellow-500' },
   { id: 'ankylosaurus', name: 'Ankylosaure', emoji: '🐊', color: 'from-slate-500 to-gray-600' },
   { id: 'spinosaurus', name: 'Spinosaure', emoji: '🐉', color: 'from-teal-500 to-emerald-500' },
 ] as const;
