@@ -302,16 +302,28 @@ export function JourneyMap({
     };
   }, [mode, setupStep, startCoords, onSetStart, onSetEnd, mapLoaded, fetchPedestrianRoute]);
 
-  // Update user position marker
+  // Update user position marker - always show during active journey
   useEffect(() => {
-    if (!map.current || !currentPosition || !mapLoaded) return;
+    if (!map.current || !mapLoaded) return;
+    
+    // Remove marker if no position
+    if (!currentPosition) {
+      if (userMarker.current) {
+        userMarker.current.remove();
+        userMarker.current = null;
+      }
+      return;
+    }
 
     if (!userMarker.current) {
       const el = document.createElement('div');
       el.className = 'relative';
       el.innerHTML = `
-        <div class="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-lg animate-pulse"></div>
-        <div class="absolute inset-0 w-4 h-4 rounded-full bg-blue-500 animate-ping opacity-75"></div>
+        <div class="absolute -inset-4 rounded-full bg-blue-500/20 animate-ping"></div>
+        <div class="absolute -inset-2 rounded-full bg-blue-500/30"></div>
+        <div class="relative w-6 h-6 rounded-full bg-blue-500 border-3 border-white shadow-lg flex items-center justify-center">
+          <div class="w-2 h-2 rounded-full bg-white"></div>
+        </div>
       `;
       userMarker.current = new mapboxgl.Marker(el)
         .setLngLat(currentPosition)
@@ -320,14 +332,15 @@ export function JourneyMap({
       userMarker.current.setLngLat(currentPosition);
     }
 
-    if (isActive) {
-      map.current.flyTo({
+    // Center map on user during active journey
+    if (isActive && mode === 'active') {
+      map.current.easeTo({
         center: currentPosition,
-        zoom: 17,
-        duration: 1000,
+        zoom: Math.max(map.current.getZoom(), 16),
+        duration: 500,
       });
     }
-  }, [currentPosition, isActive, mapLoaded]);
+  }, [currentPosition, isActive, mapLoaded, mode]);
 
   // Update checkpoint markers when journey exists
   useEffect(() => {
