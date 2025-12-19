@@ -410,9 +410,8 @@ export default function Index() {
             </div>
           ) : (
             <Button
-              className="w-full"
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-none"
               size="lg"
-              variant="outline"
               onClick={() => setView('setup-journey')}
             >
               <MapPin className="w-5 h-5" />
