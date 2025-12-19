@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Map, Satellite } from 'lucide-react';
 
 interface GeocodingResult {
   id: string;
@@ -46,6 +46,7 @@ export function JourneyMap({
   const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [mapStyle, setMapStyle] = useState<'satellite' | 'default'>('satellite');
   const [localPosition, setLocalPosition] = useState<[number, number] | null>(null);
 
   // Use either passed currentPosition or locally fetched position
@@ -219,7 +220,7 @@ export function JourneyMap({
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: 'mapbox://styles/mapbox/satellite-streets-v12',
       center: [2.3522, 48.8566], // Default center (Paris)
       zoom: 13,
       pitch: 45,
@@ -375,9 +376,41 @@ export function JourneyMap({
     }
   }, [journey, mapLoaded, addRouteToMap]);
 
+  // Toggle map style
+  const toggleMapStyle = useCallback(() => {
+    if (!map.current) return;
+    const newStyle = mapStyle === 'satellite' ? 'default' : 'satellite';
+    const styleUrl = newStyle === 'satellite' 
+      ? 'mapbox://styles/mapbox/satellite-streets-v12'
+      : 'mapbox://styles/mapbox/dark-v11';
+    
+    map.current.setStyle(styleUrl);
+    setMapStyle(newStyle);
+    
+    // Re-add route after style change
+    map.current.once('style.load', () => {
+      if (journey?.routeCoordinates) {
+        addRouteToMap(journey.routeCoordinates);
+      }
+    });
+  }, [mapStyle, journey, addRouteToMap]);
+
   return (
     <div className="absolute inset-0">
       <div ref={mapContainer} className="w-full h-full rounded-2xl overflow-hidden" />
+      
+      {/* Map style toggle button */}
+      <button
+        onClick={toggleMapStyle}
+        className="absolute top-4 right-16 z-10 p-2 bg-background/90 hover:bg-background border border-border rounded-lg shadow-lg transition-colors"
+        title={mapStyle === 'satellite' ? 'Switch to default view' : 'Switch to satellite view'}
+      >
+        {mapStyle === 'satellite' ? (
+          <Map className="w-5 h-5 text-foreground" />
+        ) : (
+          <Satellite className="w-5 h-5 text-foreground" />
+        )}
+      </button>
       
       {mode === 'setup' && (
         <div className="absolute top-4 left-4 right-4 z-10">
