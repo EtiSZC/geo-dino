@@ -20,8 +20,7 @@ export function calculateDistance(
 }
 
 // Constants for waypoint rules
-const MAX_WAYPOINTS = 5;
-const MIN_DISTANCE_BETWEEN_WAYPOINTS = 100; // meters
+const MIN_DISTANCE_BETWEEN_WAYPOINTS = 50; // meters (no max limit)
 
 // Calculate optimal number of waypoints based on route distance
 function calculateOptimalWaypointCount(totalDistance: number): number {
@@ -32,14 +31,13 @@ function calculateOptimalWaypointCount(totalDistance: number): number {
   
   const maxPossibleWaypoints = Math.floor(totalDistance / MIN_DISTANCE_BETWEEN_WAYPOINTS) - 1;
   
-  // Clamp between 0 and MAX_WAYPOINTS (allow 0 for very short routes)
-  return Math.max(0, Math.min(MAX_WAYPOINTS, maxPossibleWaypoints));
+  // No max limit, just ensure at least 0
+  return Math.max(0, maxPossibleWaypoints);
 }
 
 // Generate checkpoints along an actual route path
 export function generateCheckpointsAlongRoute(
-  routeCoordinates: [number, number][],
-  requestedCount: number = MAX_WAYPOINTS
+  routeCoordinates: [number, number][]
 ): Checkpoint[] {
   if (routeCoordinates.length < 2) return [];
   
@@ -55,9 +53,8 @@ export function generateCheckpointsAlongRoute(
     distances.push(totalDistance);
   }
   
-  // Calculate optimal count based on route distance and rules
-  const optimalCount = calculateOptimalWaypointCount(totalDistance);
-  const count = Math.min(requestedCount, optimalCount, MAX_WAYPOINTS);
+  // Calculate optimal count based on route distance (no max limit)
+  const count = calculateOptimalWaypointCount(totalDistance);
   
   // If route is too short for any waypoints with proper spacing, return empty
   if (count === 0) {
@@ -105,14 +102,12 @@ export function generateCheckpointsAlongRoute(
 // Legacy: Generate random checkpoints between two points (fallback)
 export function generateCheckpoints(
   startPoint: [number, number],
-  endPoint: [number, number],
-  requestedCount: number = MAX_WAYPOINTS
+  endPoint: [number, number]
 ): Checkpoint[] {
   const totalDistance = calculateDistance(startPoint, endPoint);
   
-  // Calculate optimal count based on distance and rules
-  const optimalCount = calculateOptimalWaypointCount(totalDistance);
-  const count = Math.min(requestedCount, optimalCount, MAX_WAYPOINTS);
+  // Calculate optimal count based on distance (no max limit)
+  const count = calculateOptimalWaypointCount(totalDistance);
   
   // If route is too short for any waypoints with proper spacing, return empty
   if (count === 0) {
@@ -145,7 +140,7 @@ export function generateCheckpoints(
 export function isWithinCheckpoint(
   userPosition: [number, number],
   checkpointPosition: [number, number],
-  thresholdMeters: number = 5
+  thresholdMeters: number = 10
 ): boolean {
   const distance = calculateDistance(userPosition, checkpointPosition);
   return distance <= thresholdMeters;
@@ -163,7 +158,7 @@ export function createJourneyWithRoute(
     name,
     startPoint,
     endPoint,
-    checkpoints: generateCheckpointsAlongRoute(routeCoordinates, 5),
+    checkpoints: generateCheckpointsAlongRoute(routeCoordinates),
     routeCoordinates,
     createdAt: new Date(),
   };
@@ -180,7 +175,7 @@ export function createJourney(
     name,
     startPoint,
     endPoint,
-    checkpoints: generateCheckpoints(startPoint, endPoint, 5),
+    checkpoints: generateCheckpoints(startPoint, endPoint),
     createdAt: new Date(),
   };
 }
