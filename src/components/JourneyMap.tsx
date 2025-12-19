@@ -405,15 +405,24 @@ export function JourneyMap({
 
     journey.checkpoints.forEach((checkpoint, index) => {
       const el = document.createElement('div');
-      el.className = cn(
-        'w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300',
-        checkpoint.validated
-          ? 'bg-success checkpoint-validated'
-          : 'bg-muted border-2 border-border'
-      );
-      el.innerHTML = checkpoint.validated
-        ? '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>'
-        : `<span class="text-sm font-bold text-muted-foreground">${index + 1}</span>`;
+      
+      if (checkpoint.validated) {
+        el.className = 'w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 bg-success checkpoint-validated';
+        el.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+      } else {
+        // Egg-shaped marker with number
+        el.className = 'flex items-center justify-center shadow-lg transition-all duration-300';
+        el.innerHTML = `
+          <div class="relative">
+            <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="16" cy="22" rx="14" ry="16" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"/>
+              <ellipse cx="16" cy="20" rx="12" ry="14" fill="#fcd34d"/>
+              <ellipse cx="12" cy="16" rx="3" ry="4" fill="#fef3c7" opacity="0.6"/>
+            </svg>
+            <span class="absolute inset-0 flex items-center justify-center text-amber-800 font-bold text-sm pt-1">${index + 1}</span>
+          </div>
+        `;
+      }
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat(checkpoint.coordinates)
