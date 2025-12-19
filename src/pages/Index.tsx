@@ -14,6 +14,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import hatchingEggImg from '@/assets/dinos/hatching-egg.png';
 
+// Import dinosaur images
+import tRexImg from '@/assets/dinos/t-rex.png';
+import triceratopsImg from '@/assets/dinos/triceratops.png';
+import velociraptorImg from '@/assets/dinos/velociraptor.png';
+import stegosaurusImg from '@/assets/dinos/stegosaurus.png';
+import pterodactylImg from '@/assets/dinos/pterodactyl.png';
+import brachiosaurusImg from '@/assets/dinos/brachiosaurus.png';
+import ankylosaurusImg from '@/assets/dinos/ankylosaurus.png';
+import spinosaurusImg from '@/assets/dinos/spinosaurus.png';
+
+const DINO_IMAGES: Record<string, string> = {
+  't-rex': tRexImg,
+  'triceratops': triceratopsImg,
+  'velociraptor': velociraptorImg,
+  'stegosaurus': stegosaurusImg,
+  'pterodactyl': pterodactylImg,
+  'brachiosaurus': brachiosaurusImg,
+  'ankylosaurus': ankylosaurusImg,
+  'spinosaurus': spinosaurusImg,
+};
+
 type AppView = 'home' | 'dino-type' | 'setup-journey' | 'active-journey' | 'collection';
 
 // Dinosaur name generator for kids
@@ -306,8 +327,16 @@ export default function Index() {
             onClick={() => setView('dino-type')}
             className="glass-card p-4 flex items-center gap-4 text-left hover:border-primary/50 transition-colors"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 flex items-center justify-center">
-              <Egg className="w-6 h-6 text-amber-500" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 flex items-center justify-center overflow-hidden">
+              {state.user.selectedDinoType && DINO_IMAGES[state.user.selectedDinoType] ? (
+                <img 
+                  src={DINO_IMAGES[state.user.selectedDinoType]} 
+                  alt={selectedDinoName || 'Dinosaure'} 
+                  className="w-10 h-10 object-contain"
+                />
+              ) : (
+                <Egg className="w-6 h-6 text-amber-500" />
+              )}
             </div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">Type de Dinosaure</p>
