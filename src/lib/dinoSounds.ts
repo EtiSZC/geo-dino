@@ -64,16 +64,16 @@ const dinoSoundConfigs: Record<string, DinoSoundConfig> = {
     texture: 'sawtooth',
     attack: 0.03,
   },
-  // Triceratops: Medium grunt
+  // Triceratops: Deep bellowing grunt like a rhino/elephant hybrid
   'Triceratops': {
-    baseFreq: 100,
-    endFreq: 70,
-    duration: 0.7,
-    filterFreq: 800,
-    filterEnd: 300,
-    waveType: 'square',
-    texture: 'triangle',
-    attack: 0.04,
+    baseFreq: 85,
+    endFreq: 45,
+    duration: 1.2,
+    filterFreq: 650,
+    filterEnd: 180,
+    waveType: 'sawtooth',
+    texture: 'square',
+    attack: 0.08,
   },
   // Stegosaurus: Low rumble
   'Stegosaurus': {
