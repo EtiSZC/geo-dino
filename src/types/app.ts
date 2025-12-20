@@ -36,6 +36,7 @@ export interface DinoReward {
   dinoName: string;
   dinoType: DinoTypeId;
   imageUrl: string; // Base64 or URL of the generated dinosaur image
+  funFact?: string; // Fun fact about the dinosaur
   earnedAt: Date;
   journeyId: string;
 }

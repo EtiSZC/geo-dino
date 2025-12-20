@@ -37,18 +37,39 @@ const DINO_IMAGES: Record<string, string> = {
 
 type AppView = 'home' | 'dino-type' | 'setup-journey' | 'active-journey' | 'collection';
 
-// Dinosaur name generator for kids
-const DINO_NAMES = [
-  'Rex', 'Tricot', 'Rapido', 'Spike', 'Aile', 'Géant', 'Bouclier', 'Nageoire',
-  'Dino', 'Gros-Dodo', 'Flash', 'Croc', 'Queue-Pointe', 'Petit-Pas', 'Grognon',
-  'Éclair', 'Tonnerre', 'Plume', 'Corne', 'Gentil', 'Câlin', 'Bisou', 'Étoile'
+// Dinosaur name generator - more diverse prehistoric-inspired names
+const DINO_FIRST_NAMES = [
+  // Noms latins/grecs
+  'Titan', 'Magnus', 'Atlas', 'Brutus', 'Maximus', 'Rex', 'Caesar', 'Nero',
+  // Noms de héros
+  'Hercule', 'Thor', 'Odin', 'Zeus', 'Apollo', 'Achille', 'Ulysse',
+  // Noms de la nature
+  'Tempête', 'Tonnerre', 'Volcan', 'Cyclone', 'Ouragan', 'Éclair', 'Comète',
+  // Noms mignons
+  'Gribouille', 'Croquette', 'Caramel', 'Cookie', 'Nougat', 'Praline',
+  // Noms de guerriers
+  'Spartacus', 'Conan', 'Attila', 'Genghis', 'Viking',
+  // Noms uniques
+  'Cosmos', 'Nova', 'Nebula', 'Galaxy', 'Orion', 'Phoenix',
+  // Noms rigolos
+  'Croc-Mignon', 'Griffe-Douce', 'Patte-Velours', 'Queue-en-Trompette',
+];
+
+const DINO_TITLES = [
+  // Titres classiques
+  'le Magnifique', 'le Terrible', 'le Grand', 'le Brave', 'le Sage',
+  // Titres rigolos
+  'le Glouton', 'le Ronfleur', 'le Câlin', 'le Farceur', 'le Rêveur',
+  // Titres épiques
+  'le Légendaire', 'le Mythique', 'l\'Ancien', 'le Colossal', 'le Titanesque',
+  // Sans titre (plus court)
+  '', '', '', '', '',
 ];
 
 const getRandomDinoName = () => {
-  const adjectives = ['Petit', 'Grand', 'Super', 'Méga', 'Mini', 'Joli', 'Mignon'];
-  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const name = DINO_NAMES[Math.floor(Math.random() * DINO_NAMES.length)];
-  return `${adj} ${name}`;
+  const firstName = DINO_FIRST_NAMES[Math.floor(Math.random() * DINO_FIRST_NAMES.length)];
+  const title = DINO_TITLES[Math.floor(Math.random() * DINO_TITLES.length)];
+  return title ? `${firstName} ${title}` : firstName;
 };
 
 export default function Index() {
@@ -154,6 +175,7 @@ export default function Index() {
         toast.error("Erreur lors de la création du dinosaure");
       } else if (data?.imageUrl) {
         reward.imageUrl = data.imageUrl;
+        reward.funFact = data.funFact;
         setShowReward({ ...reward });
       }
     } catch (err) {
