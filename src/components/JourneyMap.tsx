@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { Search, MapPin, MapPinOff, Loader2, History, X, Trash2, Eye, Crosshair } from 'lucide-react';
+import { Search, MapPin, MapPinOff, Loader2, History, X, Trash2, Eye, Crosshair, Navigation, NavigationOff } from 'lucide-react';
 import { useDestinations, Destination } from '@/hooks/useDestinations';
 
 interface GeocodingResult {
@@ -51,6 +51,8 @@ export function JourneyMap({
   const [localPosition, setLocalPosition] = useState<[number, number] | null>(null);
   const [gpsUnavailable, setGpsUnavailable] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [compassEnabled, setCompassEnabled] = useState(false);
+  const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
   const initialPositionSet = useRef(false);
 
   const { destinations, loading: loadingDestinations, addDestination, deleteDestination } = useDestinations();
@@ -448,19 +450,99 @@ export function JourneyMap({
     }
   }, [currentPosition]);
 
+  // Toggle compass mode
+  const toggleCompass = useCallback(() => {
+    if (!compassEnabled) {
+      // Request permission for device orientation on iOS 13+
+      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+        (DeviceOrientationEvent as any).requestPermission()
+          .then((response: string) => {
+            if (response === 'granted') {
+              setCompassEnabled(true);
+            }
+          })
+          .catch(console.error);
+      } else {
+        setCompassEnabled(true);
+      }
+    } else {
+      setCompassEnabled(false);
+      // Reset map bearing when disabling
+      if (map.current) {
+        map.current.easeTo({ bearing: 0, duration: 300 });
+      }
+    }
+  }, [compassEnabled]);
+
+  // Handle device orientation for compass mode
+  useEffect(() => {
+    if (!compassEnabled || mode !== 'active') return;
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      // Use webkitCompassHeading for iOS, or calculate from alpha for Android
+      let heading: number | null = null;
+      
+      if ((event as any).webkitCompassHeading !== undefined) {
+        // iOS provides compass heading directly
+        heading = (event as any).webkitCompassHeading;
+      } else if (event.alpha !== null) {
+        // Android: alpha is the compass direction (0-360)
+        // We need to invert it for map bearing
+        heading = 360 - event.alpha;
+      }
+
+      if (heading !== null) {
+        setDeviceHeading(heading);
+        if (map.current) {
+          map.current.easeTo({
+            bearing: heading,
+            duration: 100,
+          });
+        }
+      }
+    };
+
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    
+    return () => {
+      window.removeEventListener('deviceorientation', handleOrientation, true);
+    };
+  }, [compassEnabled, mode]);
+
   return (
     <div className="absolute inset-0">
       <div ref={mapContainer} className="w-full h-full rounded-2xl overflow-hidden" />
       
-      {/* Recenter button - only show during active journey */}
+      {/* Control buttons - only show during active journey */}
       {mode === 'active' && currentPosition && (
-        <button
-          onClick={recenterOnPosition}
-          className="absolute bottom-4 right-4 z-10 p-3 bg-background/90 hover:bg-background border border-border rounded-full shadow-lg transition-all duration-200 hover:scale-105"
-          title="Recentrer sur ma position"
-        >
-          <Crosshair className="w-5 h-5 text-primary" />
-        </button>
+        <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+          {/* Compass toggle button */}
+          <button
+            onClick={toggleCompass}
+            className={cn(
+              "p-3 border rounded-full shadow-lg transition-all duration-200 hover:scale-105",
+              compassEnabled 
+                ? "bg-primary text-primary-foreground border-primary" 
+                : "bg-background/90 hover:bg-background border-border"
+            )}
+            title={compassEnabled ? "Désactiver l'orientation" : "Orienter selon la boussole"}
+          >
+            {compassEnabled ? (
+              <Navigation className="w-5 h-5" />
+            ) : (
+              <NavigationOff className="w-5 h-5 text-muted-foreground" />
+            )}
+          </button>
+          
+          {/* Recenter button */}
+          <button
+            onClick={recenterOnPosition}
+            className="p-3 bg-background/90 hover:bg-background border border-border rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+            title="Recentrer sur ma position"
+          >
+            <Crosshair className="w-5 h-5 text-primary" />
+          </button>
+        </div>
       )}
       
       {/* Loading indicator */}
