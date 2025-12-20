@@ -299,7 +299,7 @@ export default function Index() {
             </div>
           </div>
           
-          <div className="flex-1 p-4 overflow-y-auto">
+          <div className="flex-1 p-4 overflow-hidden flex flex-col min-h-0">
             <JourneyTracker
               journey={state.user.currentJourney}
               currentPosition={state.currentPosition}
