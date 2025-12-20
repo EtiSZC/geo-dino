@@ -170,6 +170,17 @@ export default {
 				'75%': {
 					transform: 'translateY(-4px) rotate(1deg)'
 				}
+			},
+			'dino-alive': {
+				'0%, 100%': {
+					transform: 'scale(1) translateY(0)',
+				},
+				'30%': {
+					transform: 'scale(1.02) translateY(-2px)',
+				},
+				'60%': {
+					transform: 'scale(0.98) translateY(1px)',
+				}
 			}
   		},
   		animation: {
@@ -179,7 +190,8 @@ export default {
 			'scale-in': 'scale-in 0.3s ease-out',
 			'slide-up': 'slide-up 0.5s ease-out',
 			'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-			'dino-bounce': 'dino-bounce 1.5s ease-in-out infinite'
+			'dino-bounce': 'dino-bounce 1.5s ease-in-out infinite',
+			'dino-alive': 'dino-alive 2.5s ease-in-out infinite'
   		},
   		boxShadow: {
   			'2xs': 'var(--shadow-2xs)',
