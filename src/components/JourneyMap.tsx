@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { Search, MapPin, Map, Satellite, MapPinOff, Loader2, History, X, Trash2, Eye } from 'lucide-react';
+import { Search, MapPin, MapPinOff, Loader2, History, X, Trash2, Eye } from 'lucide-react';
 import { useDestinations, Destination } from '@/hooks/useDestinations';
 
 interface GeocodingResult {
@@ -47,7 +47,7 @@ export function JourneyMap({
   const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(true);
-  const [mapStyle, setMapStyle] = useState<'satellite' | 'default'>('satellite');
+  
   const [localPosition, setLocalPosition] = useState<[number, number] | null>(null);
   const [gpsUnavailable, setGpsUnavailable] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -369,14 +369,8 @@ export function JourneyMap({
       userMarker.current.setLngLat(currentPosition);
     }
 
-    // Center map on user during active journey
-    if (isActive && mode === 'active') {
-      map.current.easeTo({
-        center: currentPosition,
-        zoom: Math.max(map.current.getZoom(), 16),
-        duration: 500,
-      });
-    }
+    // Update marker position without auto-centering or zooming
+    // User can manually pan/zoom the map as needed
   }, [currentPosition, isActive, mapLoaded, mode]);
 
   // Update checkpoint markers when journey exists
@@ -435,24 +429,6 @@ export function JourneyMap({
     }
   }, [journey, mapLoaded, addRouteToMap]);
 
-  // Toggle map style
-  const toggleMapStyle = useCallback(() => {
-    if (!map.current) return;
-    const newStyle = mapStyle === 'satellite' ? 'default' : 'satellite';
-    const styleUrl = newStyle === 'satellite' 
-      ? 'mapbox://styles/mapbox/satellite-streets-v12'
-      : 'mapbox://styles/mapbox/dark-v11';
-    
-    map.current.setStyle(styleUrl);
-    setMapStyle(newStyle);
-    
-    // Re-add route after style change
-    map.current.once('style.load', () => {
-      if (journey?.routeCoordinates) {
-        addRouteToMap(journey.routeCoordinates);
-      }
-    });
-  }, [mapStyle, journey, addRouteToMap]);
 
   return (
     <div className="absolute inset-0">
@@ -512,18 +488,6 @@ export function JourneyMap({
         </div>
       )}
       
-      {/* Map style toggle button */}
-      <button
-        onClick={toggleMapStyle}
-        className="absolute top-4 right-16 z-10 p-2 bg-background/90 hover:bg-background border border-border rounded-lg shadow-lg transition-colors"
-        title={mapStyle === 'satellite' ? 'Switch to default view' : 'Switch to satellite view'}
-      >
-        {mapStyle === 'satellite' ? (
-          <Map className="w-5 h-5 text-foreground" />
-        ) : (
-          <Satellite className="w-5 h-5 text-foreground" />
-        )}
-      </button>
       
       {mode === 'setup' && (
         <div className="absolute top-4 left-4 right-4 z-10">
