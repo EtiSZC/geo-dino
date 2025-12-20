@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DinoReward, DINO_TYPES } from '@/types/app';
-import { Trophy, Sparkles, Loader2 } from 'lucide-react';
+import { Trophy, Sparkles, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -37,7 +37,7 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-xl animate-fade-in">
-      <div className="glass-card p-6 max-w-sm w-full space-y-6 text-center animate-scale-in">
+      <div className="glass-card p-6 max-w-sm w-full space-y-6 text-center animate-scale-in max-h-[90vh] overflow-y-auto">
         {/* Trophy animation */}
         <div className="relative">
           <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-amber-600 flex items-center justify-center animate-pulse-glow">
@@ -134,6 +134,25 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
                 </div>
               </div>
             </div>
+
+            {/* Fun Fact Section */}
+            {reward.funFact && (
+              <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-left">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <Info className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">
+                      Le savais-tu ?
+                    </p>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {reward.funFact}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <Button onClick={onClose} className="w-full" size="lg">
               Nouvelle Aventure
