@@ -369,8 +369,15 @@ export function JourneyMap({
       userMarker.current.setLngLat(currentPosition);
     }
 
-    // Update marker position without auto-centering or zooming
-    // User can manually pan/zoom the map as needed
+    // In active mode, keep user centered while preserving their zoom level
+    if (mode === 'active') {
+      const currentZoom = map.current.getZoom();
+      map.current.easeTo({
+        center: currentPosition,
+        zoom: currentZoom, // Preserve user's zoom level
+        duration: 500,
+      });
+    }
   }, [currentPosition, isActive, mapLoaded, mode]);
 
   // Update checkpoint markers when journey exists
