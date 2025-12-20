@@ -365,15 +365,15 @@ export function JourneyMap({
 
     if (!userMarker.current) {
       const el = document.createElement('div');
-      el.className = 'relative';
+      el.className = 'w-8 h-8 flex items-center justify-center';
       el.innerHTML = `
-        <div class="absolute -inset-4 rounded-full bg-blue-500/20 animate-ping"></div>
-        <div class="absolute -inset-2 rounded-full bg-blue-500/30"></div>
-        <div class="relative w-6 h-6 rounded-full bg-blue-500 border-3 border-white shadow-lg flex items-center justify-center">
+        <div class="absolute w-12 h-12 rounded-full bg-blue-500/20 animate-ping"></div>
+        <div class="absolute w-10 h-10 rounded-full bg-blue-500/30"></div>
+        <div class="w-6 h-6 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center z-10">
           <div class="w-2 h-2 rounded-full bg-white"></div>
         </div>
       `;
-      userMarker.current = new mapboxgl.Marker(el)
+      userMarker.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat(currentPosition)
         .addTo(map.current);
     } else {
