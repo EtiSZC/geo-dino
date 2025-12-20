@@ -495,7 +495,7 @@ export function JourneyMap({
             {setupStep === 'start' && (
               <>
                 <p className="text-sm font-medium">
-                  📍 Tap on the map to set your <span className="text-primary font-bold">starting point</span>
+                  📍 Touche la carte pour définir ton <span className="text-primary font-bold">point de départ</span>
                 </p>
                 <button
                   onClick={effectivePosition ? () => {
@@ -520,14 +520,14 @@ export function JourneyMap({
                   disabled={isGettingLocation}
                   className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
-                  {isGettingLocation ? '📍 Getting location...' : '📍 Use My Current Location'}
+                  {isGettingLocation ? '📍 Localisation en cours...' : '📍 Utiliser ma position actuelle'}
                 </button>
               </>
             )}
             {setupStep === 'end' && (
               <div className="space-y-3">
                 <p className="text-sm font-medium">
-                  🏁 Tap on the map or search for your <span className="text-accent font-bold">destination</span>
+                  🏁 Touche la carte ou recherche ta <span className="font-bold">destination</span>
                 </p>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
@@ -536,7 +536,7 @@ export function JourneyMap({
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search for an address..."
+                      placeholder="Rechercher une adresse..."
                       className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                       maxLength={200}
                     />
@@ -550,7 +550,7 @@ export function JourneyMap({
                   </button>
                 </div>
                 {isSearching && (
-                  <p className="text-xs text-muted-foreground">Searching...</p>
+                  <p className="text-xs text-muted-foreground">Recherche en cours...</p>
                 )}
                 {searchResults.length > 0 && (
                   <div className="max-h-40 overflow-y-auto space-y-1">
