@@ -140,7 +140,7 @@ export function generateCheckpoints(
 export function isWithinCheckpoint(
   userPosition: [number, number],
   checkpointPosition: [number, number],
-  thresholdMeters: number = 15
+  thresholdMeters: number = 5
 ): boolean {
   const distance = calculateDistance(userPosition, checkpointPosition);
   return distance <= thresholdMeters;
