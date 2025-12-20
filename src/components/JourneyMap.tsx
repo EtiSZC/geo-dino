@@ -318,7 +318,7 @@ export function JourneyMap({
     if (mode === 'active' && previousMode.current !== 'active' && currentPosition) {
       map.current.flyTo({
         center: currentPosition,
-        zoom: 17,
+        zoom: 16, // Same zoom level as recenter button
         duration: 1200,
         pitch: 60, // Tilt for better immersion
       });
@@ -389,14 +389,30 @@ export function JourneyMap({
       userMarker.current.setLngLat(currentPosition);
     }
 
-    // In active mode, keep user centered while preserving their zoom level
-    if (mode === 'active') {
-      const currentZoom = map.current.getZoom();
-      map.current.easeTo({
-        center: currentPosition,
-        zoom: currentZoom, // Preserve user's zoom level
-        duration: 500,
-      });
+    // In active mode, fit bounds to show user and next waypoint
+    if (mode === 'active' && journey) {
+      // Find next unvalidated checkpoint
+      const nextCheckpoint = journey.checkpoints.find(cp => !cp.validated);
+      
+      if (nextCheckpoint) {
+        const bounds = new mapboxgl.LngLatBounds();
+        bounds.extend(currentPosition);
+        bounds.extend(nextCheckpoint.coordinates);
+        
+        map.current.fitBounds(bounds, {
+          padding: { top: 100, bottom: 150, left: 50, right: 50 },
+          maxZoom: 17,
+          duration: 500,
+        });
+      } else {
+        // All checkpoints validated, just center on user
+        const currentZoom = map.current.getZoom();
+        map.current.easeTo({
+          center: currentPosition,
+          zoom: currentZoom,
+          duration: 500,
+        });
+      }
     }
   }, [currentPosition, isActive, mapLoaded, mode]);
 
