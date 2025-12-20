@@ -13,6 +13,7 @@ import { createJourneyWithRoute } from '@/lib/geoUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import hatchingEggImg from '@/assets/dinos/hatching-egg.png';
+import homepageIllustration from '@/assets/homepage-illustration-2.png';
 
 // Import dinosaur images
 import tRexImg from '@/assets/dinos/t-rex.png';
@@ -331,9 +332,9 @@ export default function Index() {
 
       {/* Home view */}
       {view === 'home' && (
-        <div className="min-h-screen flex flex-col p-4 space-y-6">
+        <div className="min-h-screen flex flex-col">
           {/* Header */}
-          <header className="flex items-center justify-between">
+          <header className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
                 <span className="text-2xl">🥚</span>
@@ -345,105 +346,20 @@ export default function Index() {
             </div>
           </header>
 
-          {/* Dino type selection card */}
-          <button
-            onClick={() => setView('dino-type')}
-            className="glass-card p-4 flex items-center gap-4 text-left hover:border-primary/50 transition-colors"
-          >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 flex items-center justify-center overflow-hidden">
-              {state.user.selectedDinoType && DINO_IMAGES[state.user.selectedDinoType] ? (
-                <img 
-                  src={DINO_IMAGES[state.user.selectedDinoType]} 
-                  alt={selectedDinoName || 'Dinosaure'} 
-                  className="w-10 h-10 object-contain"
-                />
-              ) : (
-                <Egg className="w-6 h-6 text-amber-500" />
-              )}
+          {/* Hero illustration */}
+          <div className="w-full px-4">
+            <div className="w-full rounded-2xl overflow-hidden shadow-lg">
+              <img 
+                src={homepageIllustration} 
+                alt="T-Rex explorateur à la recherche d'œufs de dinosaure" 
+                className="w-full h-auto object-cover"
+              />
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">Type de Dinosaure</p>
-              <p className="font-semibold">
-                {selectedDinoName || 'Choisis un dinosaure'}
-              </p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
+          </div>
 
-          {/* Current journey or setup */}
-          {state.user.currentJourney ? (
-            <div className="space-y-4">
-              <div className="glass-card p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Expédition en cours</p>
-                    <p className="font-semibold">{state.user.currentJourney.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {state.user.currentJourney.checkpoints.filter(c => c.validated).length} / {state.user.currentJourney.checkpoints.length} œufs trouvés
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={resetJourney}
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="h-40 rounded-xl overflow-hidden pointer-events-none">
-                  <JourneyMap
-                    mapboxToken={state.user.mapboxToken}
-                    journey={state.user.currentJourney}
-                    currentPosition={state.currentPosition}
-                    isActive={false}
-                    mode="view"
-                  />
-                </div>
-              </div>
-
-              <Button
-                className="w-full"
-                size="lg"
-                disabled={!state.user.selectedDinoType}
-                onClick={() => {
-                  startJourney();
-                  setView('active-journey');
-                }}
-              >
-                <Play className="w-5 h-5" />
-                Partir à l'aventure !
-              </Button>
-
-              <Button
-                className="w-full"
-                size="lg"
-                variant="outline"
-                onClick={resetJourney}
-              >
-                <RotateCcw className="w-5 h-5" />
-                Annuler l'expédition
-              </Button>
-              
-              {!state.user.selectedDinoType && (
-                <p className="text-center text-sm text-muted-foreground">
-                  Choisis d'abord un type de dinosaure
-                </p>
-              )}
-            </div>
-          ) : (
-            <Button
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-none"
-              size="lg"
-              onClick={() => setView('setup-journey')}
-            >
-              <MapPin className="w-5 h-5" />
-              Préparer une Expédition
-            </Button>
-          )}
-
-          {/* Collection section */}
-          <div className="flex-1">
+          {/* Content */}
+          <div className="flex-1 flex flex-col p-4 space-y-4">
+            {/* Collection section */}
             <button
               onClick={() => setView('collection')}
               className="w-full glass-card p-4 flex items-center gap-4 text-left hover:border-primary/50 transition-colors"
@@ -459,12 +375,109 @@ export default function Index() {
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
-          </div>
 
-          {/* Install hint */}
-          <p className="text-center text-xs text-muted-foreground">
-            Installe l'app : Partager → Ajouter à l'écran d'accueil
-          </p>
+            {/* Dino type selection card */}
+            <button
+              onClick={() => setView('dino-type')}
+              className="glass-card p-4 flex items-center gap-4 text-left hover:border-primary/50 transition-colors"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 flex items-center justify-center overflow-hidden">
+                {state.user.selectedDinoType && DINO_IMAGES[state.user.selectedDinoType] ? (
+                  <img 
+                    src={DINO_IMAGES[state.user.selectedDinoType]} 
+                    alt={selectedDinoName || 'Dinosaure'} 
+                    className="w-10 h-10 object-contain"
+                  />
+                ) : (
+                  <Egg className="w-6 h-6 text-amber-500" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Type de Dinosaure</p>
+                <p className="font-semibold">
+                  {selectedDinoName || 'Choisis un dinosaure'}
+                </p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+
+            {/* Current journey or setup button */}
+            {state.user.currentJourney ? (
+              <div className="space-y-4">
+                <div className="glass-card p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Expédition en cours</p>
+                      <p className="font-semibold">{state.user.currentJourney.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {state.user.currentJourney.checkpoints.filter(c => c.validated).length} / {state.user.currentJourney.checkpoints.length} œufs trouvés
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={resetJourney}
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="h-40 rounded-xl overflow-hidden pointer-events-none">
+                    <JourneyMap
+                      mapboxToken={state.user.mapboxToken}
+                      journey={state.user.currentJourney}
+                      currentPosition={state.currentPosition}
+                      isActive={false}
+                      mode="view"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  className="w-full"
+                  size="lg"
+                  disabled={!state.user.selectedDinoType}
+                  onClick={() => {
+                    startJourney();
+                    setView('active-journey');
+                  }}
+                >
+                  <Play className="w-5 h-5" />
+                  Partir à l'aventure !
+                </Button>
+
+                <Button
+                  className="w-full"
+                  size="lg"
+                  variant="outline"
+                  onClick={resetJourney}
+                >
+                  <RotateCcw className="w-5 h-5" />
+                  Annuler l'expédition
+                </Button>
+                
+                {!state.user.selectedDinoType && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Choisis d'abord un type de dinosaure
+                  </p>
+                )}
+              </div>
+            ) : (
+              <Button
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-none mt-auto"
+                size="lg"
+                onClick={() => setView('setup-journey')}
+              >
+                <MapPin className="w-5 h-5" />
+                Préparer une Expédition
+              </Button>
+            )}
+
+            {/* Install hint */}
+            <p className="text-center text-xs text-muted-foreground pt-2">
+              Installe l'app : Partager → Ajouter à l'écran d'accueil
+            </p>
+          </div>
         </div>
       )}
     </div>
