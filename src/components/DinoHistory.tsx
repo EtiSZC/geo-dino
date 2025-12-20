@@ -82,7 +82,7 @@ export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
               <div
                 key={reward.id}
                 onClick={() => {
-                  playDinoRoar();
+                  playDinoRoar(dinoType?.name);
                   setSelectedDino(reward);
                 }}
                 className={cn(
