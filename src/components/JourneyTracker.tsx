@@ -1,11 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Flag, Navigation, CheckCircle, Egg } from 'lucide-react';
 import { Journey } from '@/types/app';
-import { isWithinCheckpoint, areAllCheckpointsValidated } from '@/lib/geoUtils';
+import { isWithinCheckpoint, areAllCheckpointsValidated, calculateDistance } from '@/lib/geoUtils';
 import { celebrateEggFound } from '@/lib/celebrationFeedback';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+// Format distance for display
+function formatDistance(meters: number): string {
+  if (meters < 1000) {
+    return `${Math.round(meters)}m`;
+  }
+  return `${(meters / 1000).toFixed(1)}km`;
+}
 
 interface JourneyTrackerProps {
   journey: Journey;
@@ -27,6 +35,23 @@ export function JourneyTracker({
   const validatedCount = journey.checkpoints.filter(cp => cp.validated).length;
   const totalCount = journey.checkpoints.length;
   const progress = (validatedCount / totalCount) * 100;
+  
+  // Calculate distance to next unvalidated checkpoint
+  const nextCheckpointInfo = useMemo(() => {
+    if (!currentPosition) return null;
+    
+    const nextCheckpoint = journey.checkpoints.find(cp => !cp.validated);
+    if (!nextCheckpoint) return null;
+    
+    const distance = calculateDistance(currentPosition, nextCheckpoint.coordinates);
+    const index = journey.checkpoints.indexOf(nextCheckpoint);
+    
+    return {
+      index: index + 1,
+      distance,
+      formattedDistance: formatDistance(distance),
+    };
+  }, [currentPosition, journey.checkpoints]);
   
   // Prevent multiple calls to onJourneyComplete
   const hasCompletedRef = useRef(false);
@@ -87,6 +112,19 @@ export function JourneyTracker({
           </Button>
         )}
       </div>
+
+      {/* Distance to next egg */}
+      {isActive && nextCheckpointInfo && (
+        <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30">
+          <Egg className="w-5 h-5 text-amber-500" />
+          <span className="text-sm font-medium">
+            Prochain œuf #{nextCheckpointInfo.index} :
+          </span>
+          <span className="text-lg font-bold text-amber-500">
+            {nextCheckpointInfo.formattedDistance}
+          </span>
+        </div>
+      )}
 
       {/* Progress bar */}
       <div className="relative h-2 bg-secondary rounded-full overflow-hidden">

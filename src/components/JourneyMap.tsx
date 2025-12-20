@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { Search, MapPin, Map, Satellite, MapPinOff, Loader2, History, X } from 'lucide-react';
+import { Search, MapPin, Map, Satellite, MapPinOff, Loader2, History, X, Trash2 } from 'lucide-react';
 import { useDestinations, Destination } from '@/hooks/useDestinations';
 
 interface GeocodingResult {
@@ -53,7 +53,7 @@ export function JourneyMap({
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const initialPositionSet = useRef(false);
 
-  const { destinations, loading: loadingDestinations, addDestination } = useDestinations();
+  const { destinations, loading: loadingDestinations, addDestination, deleteDestination } = useDestinations();
 
   // Use either passed currentPosition or locally fetched position
   const effectivePosition = currentPosition || localPosition;
@@ -649,23 +649,37 @@ export function JourneyMap({
             ) : (
               <div className="overflow-y-auto space-y-2 flex-1">
                 {destinations.map((dest) => (
-                  <button
+                  <div
                     key={dest.id}
-                    onClick={() => selectDestination(dest.coordinates, dest.name)}
-                    className="w-full flex items-start gap-3 p-3 text-left bg-background/60 hover:bg-background/80 rounded-lg transition-colors"
+                    className="flex items-start gap-3 p-3 bg-background/60 hover:bg-background/80 rounded-lg transition-colors"
                   >
-                    <MapPin className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium line-clamp-2">{dest.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(dest.created_at).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => selectDestination(dest.coordinates, dest.name)}
+                      className="flex items-start gap-3 flex-1 text-left"
+                    >
+                      <MapPin className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium line-clamp-2">{dest.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(dest.created_at).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteDestination(dest.id);
+                      }}
+                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
