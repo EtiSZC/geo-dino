@@ -151,8 +151,8 @@ export function JourneyTracker({
         />
       </div>
 
-      {/* Checkpoint list - as eggs */}
-      <div className="space-y-2">
+      {/* Checkpoint list - as eggs - scrollable with max height */}
+      <div className="space-y-2 max-h-32 overflow-y-auto">
         {journey.checkpoints.map((checkpoint, index) => (
           <div
             key={checkpoint.id}
