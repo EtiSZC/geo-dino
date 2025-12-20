@@ -141,6 +141,16 @@ export function useAppState() {
     }));
   }, []);
 
+  const deleteDinoReward = useCallback((rewardId: string) => {
+    setState(prev => ({
+      ...prev,
+      user: {
+        ...prev.user,
+        dinoRewards: prev.user.dinoRewards.filter(r => r.id !== rewardId),
+      },
+    }));
+  }, []);
+
   return {
     state,
     setDinoType,
@@ -152,5 +162,6 @@ export function useAppState() {
     validateCheckpoint,
     addDinoReward,
     resetJourney,
+    deleteDinoReward,
   };
 }

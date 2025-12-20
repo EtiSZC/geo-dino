@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DinoReward, DINO_TYPES } from '@/types/app';
-import { Trophy, Info, X } from 'lucide-react';
+import { Trophy, Info, X, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -27,10 +27,26 @@ const DINO_IMAGES: Record<string, string> = {
 
 interface DinoHistoryProps {
   rewards: DinoReward[];
+  onDelete?: (rewardId: string) => void;
 }
 
-export function DinoHistory({ rewards }: DinoHistoryProps) {
+export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
   const [selectedDino, setSelectedDino] = useState<DinoReward | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const handleDelete = (rewardId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirmDeleteId === rewardId) {
+      onDelete?.(rewardId);
+      setConfirmDeleteId(null);
+      if (selectedDino?.id === rewardId) {
+        setSelectedDino(null);
+      }
+    } else {
+      setConfirmDeleteId(rewardId);
+      setTimeout(() => setConfirmDeleteId(null), 3000);
+    }
+  };
 
   if (rewards.length === 0) {
     return (
@@ -94,6 +110,20 @@ export function DinoHistory({ rewards }: DinoHistoryProps) {
                     <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary/90 flex items-center justify-center">
                       <Info className="w-3.5 h-3.5 text-primary-foreground" />
                     </div>
+                  )}
+                  {/* Delete button */}
+                  {onDelete && (
+                    <button
+                      onClick={(e) => handleDelete(reward.id, e)}
+                      className={cn(
+                        "absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-colors",
+                        confirmDeleteId === reward.id 
+                          ? "bg-destructive text-destructive-foreground" 
+                          : "bg-background/80 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+                      )}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   )}
                 </div>
                 
@@ -188,14 +218,32 @@ export function DinoHistory({ rewards }: DinoHistoryProps) {
               </div>
             )}
 
-            {/* Date */}
-            <p className="text-xs text-center text-muted-foreground">
-              Découvert le {new Date(selectedDino.earnedAt).toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              })}
-            </p>
+            {/* Date and Delete */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Découvert le {new Date(selectedDino.earnedAt).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </p>
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => handleDelete(selectedDino.id, e)}
+                  className={cn(
+                    "h-8 gap-1.5 text-xs",
+                    confirmDeleteId === selectedDino.id 
+                      ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" 
+                      : "text-muted-foreground hover:text-destructive"
+                  )}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {confirmDeleteId === selectedDino.id ? "Confirmer" : "Supprimer"}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

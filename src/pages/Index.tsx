@@ -83,6 +83,7 @@ export default function Index() {
     validateCheckpoint,
     addDinoReward,
     resetJourney,
+    deleteDinoReward,
   } = useAppState();
 
   const [view, setView] = useState<AppView>('home');
@@ -323,7 +324,7 @@ export default function Index() {
             </Button>
           </header>
           <div className="flex-1 p-4">
-            <DinoHistory rewards={state.user.dinoRewards} />
+            <DinoHistory rewards={state.user.dinoRewards} onDelete={deleteDinoReward} />
           </div>
         </div>
       )}
