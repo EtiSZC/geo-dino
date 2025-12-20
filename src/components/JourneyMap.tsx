@@ -3,7 +3,8 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { Search, MapPin, Map, Satellite, MapPinOff, Loader2 } from 'lucide-react';
+import { Search, MapPin, Map, Satellite, MapPinOff, Loader2, History, X } from 'lucide-react';
+import { useDestinations, Destination } from '@/hooks/useDestinations';
 
 interface GeocodingResult {
   id: string;
@@ -49,7 +50,10 @@ export function JourneyMap({
   const [mapStyle, setMapStyle] = useState<'satellite' | 'default'>('satellite');
   const [localPosition, setLocalPosition] = useState<[number, number] | null>(null);
   const [gpsUnavailable, setGpsUnavailable] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const initialPositionSet = useRef(false);
+
+  const { destinations, loading: loadingDestinations, addDestination } = useDestinations();
 
   // Use either passed currentPosition or locally fetched position
   const effectivePosition = currentPosition || localPosition;
@@ -189,11 +193,17 @@ export function JourneyMap({
   }, [searchQuery, searchAddress]);
 
   // Handle selecting a search result as destination
-  const selectDestination = useCallback((coords: [number, number]) => {
+  const selectDestination = useCallback(async (coords: [number, number], name?: string) => {
     if (onSetEnd) onSetEnd(coords);
     setSetupStep('done');
     setSearchQuery('');
     setSearchResults([]);
+    setShowHistoryModal(false);
+    
+    // Save destination to history
+    if (name) {
+      await addDestination(name, coords);
+    }
     
     if (endMarker.current) endMarker.current.remove();
     const el = document.createElement('div');
@@ -212,7 +222,7 @@ export function JourneyMap({
     if (startCoords) {
       fetchPedestrianRoute(startCoords, coords);
     }
-  }, [onSetEnd, startCoords, fetchPedestrianRoute]);
+  }, [onSetEnd, startCoords, fetchPedestrianRoute, addDestination]);
 
   // Initialize map and auto-center on user location
   useEffect(() => {
@@ -566,16 +576,25 @@ export function JourneyMap({
                 <p className="text-sm font-medium">
                   🏁 Tap on the map or search for your <span className="text-accent font-bold">destination</span>
                 </p>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for an address..."
-                    className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                    maxLength={200}
-                  />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search for an address..."
+                      className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                      maxLength={200}
+                    />
+                  </div>
+                  <button
+                    onClick={() => setShowHistoryModal(true)}
+                    className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors"
+                    title="Destinations récentes"
+                  >
+                    <History className="w-5 h-5" />
+                  </button>
                 </div>
                 {isSearching && (
                   <p className="text-xs text-muted-foreground">Searching...</p>
@@ -585,7 +604,7 @@ export function JourneyMap({
                     {searchResults.map((result) => (
                       <button
                         key={result.id}
-                        onClick={() => selectDestination(result.center)}
+                        onClick={() => selectDestination(result.center, result.place_name)}
                         className="w-full flex items-start gap-2 p-2 text-left bg-background/60 hover:bg-background/80 rounded-lg transition-colors"
                       >
                         <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
@@ -600,6 +619,55 @@ export function JourneyMap({
               <p className="text-sm font-medium text-success">
                 ✅ Route calculated! Tap "Create Journey" to begin
               </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {showHistoryModal && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50 rounded-2xl">
+          <div className="glass-card m-4 p-4 max-w-sm w-full max-h-[80%] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-lg">📍 Destinations récentes</h3>
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="p-1 hover:bg-muted rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {loadingDestinations ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : destinations.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8 text-sm">
+                Aucune destination récente
+              </p>
+            ) : (
+              <div className="overflow-y-auto space-y-2 flex-1">
+                {destinations.map((dest) => (
+                  <button
+                    key={dest.id}
+                    onClick={() => selectDestination(dest.coordinates, dest.name)}
+                    className="w-full flex items-start gap-3 p-3 text-left bg-background/60 hover:bg-background/80 rounded-lg transition-colors"
+                  >
+                    <MapPin className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium line-clamp-2">{dest.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(dest.created_at).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>
