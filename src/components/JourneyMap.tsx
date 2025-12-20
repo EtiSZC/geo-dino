@@ -493,10 +493,16 @@ export function JourneyMap({
   }, [compassEnabled]);
 
   // Handle device orientation for compass mode
+  const lastBearingUpdate = useRef<number>(0);
   useEffect(() => {
     if (!compassEnabled || mode !== 'active') return;
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
+      // Throttle updates to avoid overlapping animations
+      const now = Date.now();
+      if (now - lastBearingUpdate.current < 50) return;
+      lastBearingUpdate.current = now;
+
       // Use webkitCompassHeading for iOS, or calculate from alpha for Android
       let heading: number | null = null;
       
@@ -509,14 +515,11 @@ export function JourneyMap({
         heading = 360 - event.alpha;
       }
 
-      if (heading !== null) {
+      if (heading !== null && map.current) {
         setDeviceHeading(heading);
-        if (map.current) {
-          map.current.easeTo({
-            bearing: heading,
-            duration: 100,
-          });
-        }
+        // Use jumpTo instead of easeTo for instant rotation without animation
+        // This prevents markers from appearing to float during rotation
+        map.current.setBearing(heading);
       }
     };
 
