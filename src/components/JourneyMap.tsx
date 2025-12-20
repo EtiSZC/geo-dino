@@ -193,7 +193,7 @@ export function JourneyMap({
   }, [searchQuery, searchAddress]);
 
   // Handle selecting a search result as destination
-  const selectDestination = useCallback(async (coords: [number, number], name?: string) => {
+  const selectDestination = useCallback(async (coords: [number, number], name?: string, saveToHistory: boolean = true) => {
     if (onSetEnd) onSetEnd(coords);
     setSetupStep('done');
     setSearchQuery('');
@@ -201,8 +201,9 @@ export function JourneyMap({
     setShowHistoryModal(false);
     
     // Save destination to history
-    if (name) {
-      await addDestination(name, coords);
+    if (saveToHistory) {
+      const destinationName = name || `📍 ${coords[1].toFixed(5)}, ${coords[0].toFixed(5)}`;
+      await addDestination(destinationName, coords);
     }
     
     if (endMarker.current) endMarker.current.remove();
@@ -327,20 +328,8 @@ export function JourneyMap({
           .addTo(map.current!);
           
       } else if (setupStep === 'end') {
-        if (onSetEnd) onSetEnd(coords);
-        setSetupStep('done');
-        
-        if (endMarker.current) endMarker.current.remove();
-        const el = document.createElement('div');
-        el.className = 'w-8 h-8 rounded-full bg-accent border-3 border-white shadow-lg flex items-center justify-center cursor-pointer';
-        el.innerHTML = '<span class="text-sm font-bold text-white">E</span>';
-        endMarker.current = new mapboxgl.Marker(el)
-          .setLngLat(coords)
-          .addTo(map.current!);
-
-        if (startCoords) {
-          fetchPedestrianRoute(startCoords, coords);
-        }
+        // Save GPS point to history with coordinates as name
+        selectDestination(coords, undefined, true);
       }
     };
 
@@ -648,27 +637,44 @@ export function JourneyMap({
               </p>
             ) : (
               <div className="overflow-y-auto space-y-2 flex-1">
-                {destinations.map((dest) => (
-                  <div
-                    key={dest.id}
-                    className="flex items-start gap-3 p-3 bg-background/60 hover:bg-background/80 rounded-lg transition-colors"
-                  >
-                    <button
-                      onClick={() => selectDestination(dest.coordinates, dest.name)}
-                      className="flex items-start gap-3 flex-1 text-left"
+                {destinations.map((dest) => {
+                  const isGpsPoint = dest.name.startsWith('📍');
+                  const createdDate = new Date(dest.created_at);
+                  
+                  return (
+                    <div
+                      key={dest.id}
+                      className="flex items-start gap-3 p-3 bg-background/60 hover:bg-background/80 rounded-lg transition-colors"
                     >
-                      <MapPin className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium line-clamp-2">{dest.name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(dest.created_at).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                    </button>
+                      <button
+                        onClick={() => selectDestination(dest.coordinates, dest.name, false)}
+                        className="flex items-start gap-3 flex-1 text-left"
+                      >
+                        <MapPin className={cn(
+                          "w-5 h-5 mt-0.5 flex-shrink-0",
+                          isGpsPoint ? "text-blue-500" : "text-amber-500"
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium line-clamp-2">
+                            {isGpsPoint ? 'Point GPS' : dest.name}
+                          </p>
+                          {isGpsPoint && (
+                            <p className="text-xs text-muted-foreground/70 mt-0.5 font-mono">
+                              {dest.name.replace('📍 ', '')}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {createdDate.toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })} à {createdDate.toLocaleTimeString('fr-FR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        </div>
+                      </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -680,7 +686,8 @@ export function JourneyMap({
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
