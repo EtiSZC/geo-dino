@@ -393,7 +393,9 @@ export default function Index() {
                 )}
               </div>
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Type de Dinosaure</p>
+                {state.user.selectedDinoType && (
+                  <p className="text-sm text-muted-foreground">Type de Dinosaure</p>
+                )}
                 <p className="font-semibold">
                   {selectedDinoName || 'Choisis un dinosaure'}
                 </p>
