@@ -283,23 +283,23 @@ export default function Index() {
 
       {/* Active journey view */}
       {view === 'active-journey' && state.user.currentJourney && (
-        <div className="min-h-screen flex flex-col">
-        <div className="h-[55vh] relative">
-          <JourneyMap
-            mapboxToken={state.user.mapboxToken}
-            journey={state.user.currentJourney}
-            currentPosition={state.currentPosition}
-            isActive={state.isJourneyActive}
-            mode="active"
-          />
-          
-          {/* GPS status indicator */}
-          <div className="absolute top-4 left-4 z-10">
-            <GpsIndicator accuracy={gpsAccuracy} error={gpsError} />
+        <div className="h-screen flex flex-col">
+          <div className="h-1/2 relative">
+            <JourneyMap
+              mapboxToken={state.user.mapboxToken}
+              journey={state.user.currentJourney}
+              currentPosition={state.currentPosition}
+              isActive={state.isJourneyActive}
+              mode="active"
+            />
+            
+            {/* GPS status indicator */}
+            <div className="absolute top-4 left-4 z-10">
+              <GpsIndicator accuracy={gpsAccuracy} error={gpsError} />
+            </div>
           </div>
-        </div>
           
-          <div className="p-4">
+          <div className="h-1/2 p-4 overflow-y-auto">
             <JourneyTracker
               journey={state.user.currentJourney}
               currentPosition={state.currentPosition}
