@@ -164,20 +164,20 @@ export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
               </Button>
             </div>
 
-            {/* Dinosaur Image */}
+            {/* Dinosaur Image with animation */}
             <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
               {selectedDino.imageUrl ? (
                 <img 
                   src={selectedDino.imageUrl} 
                   alt={selectedDino.dinoName}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover animate-dino-bounce"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <img 
                     src={DINO_IMAGES[selectedDino.dinoType]} 
                     alt={DINO_TYPES.find(d => d.id === selectedDino.dinoType)?.name}
-                    className="w-24 h-24 object-contain"
+                    className="w-24 h-24 object-contain animate-dino-bounce"
                   />
                 </div>
               )}
