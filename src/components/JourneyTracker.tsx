@@ -117,18 +117,6 @@ export function JourneyTracker({
         )}
       </div>
 
-      {/* Wake lock indicator */}
-      {isActive && wakeLockSupported && (
-        <div className={cn(
-          "flex items-center justify-center gap-2 p-2 rounded-lg text-xs",
-          wakeLockActive ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-        )}>
-          <Smartphone className="w-4 h-4" />
-          <span>
-            {wakeLockActive ? "Écran maintenu allumé" : "Veille automatique"}
-          </span>
-        </div>
-      )}
 
       {/* Distance to next egg */}
       {isActive && nextCheckpointInfo && (
