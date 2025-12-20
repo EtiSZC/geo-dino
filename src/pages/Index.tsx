@@ -283,8 +283,8 @@ export default function Index() {
 
       {/* Active journey view */}
       {view === 'active-journey' && state.user.currentJourney && (
-        <div className="h-screen flex flex-col">
-          <div className="h-1/2 relative">
+        <div className="h-screen flex flex-col overflow-hidden">
+          <div className="h-[50vh] min-h-[200px] relative flex-shrink-0">
             <JourneyMap
               mapboxToken={state.user.mapboxToken}
               journey={state.user.currentJourney}
@@ -299,7 +299,7 @@ export default function Index() {
             </div>
           </div>
           
-          <div className="h-1/2 p-4 overflow-y-auto">
+          <div className="flex-1 p-4 overflow-y-auto">
             <JourneyTracker
               journey={state.user.currentJourney}
               currentPosition={state.currentPosition}
