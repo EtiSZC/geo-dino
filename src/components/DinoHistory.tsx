@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DinoReward, DINO_TYPES } from '@/types/app';
-import { Trophy, Info, X, Trash2 } from 'lucide-react';
+import { Trophy, Info, X, Trash2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -32,19 +32,20 @@ interface DinoHistoryProps {
 
 export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
   const [selectedDino, setSelectedDino] = useState<DinoReward | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [dinoToDelete, setDinoToDelete] = useState<DinoReward | null>(null);
 
-  const handleDelete = (rewardId: string, e: React.MouseEvent) => {
+  const openDeleteModal = (reward: DinoReward, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirmDeleteId === rewardId) {
-      onDelete?.(rewardId);
-      setConfirmDeleteId(null);
-      if (selectedDino?.id === rewardId) {
+    setDinoToDelete(reward);
+  };
+
+  const confirmDelete = () => {
+    if (dinoToDelete) {
+      onDelete?.(dinoToDelete.id);
+      if (selectedDino?.id === dinoToDelete.id) {
         setSelectedDino(null);
       }
-    } else {
-      setConfirmDeleteId(rewardId);
-      setTimeout(() => setConfirmDeleteId(null), 3000);
+      setDinoToDelete(null);
     }
   };
 
@@ -114,13 +115,8 @@ export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
                   {/* Delete button */}
                   {onDelete && (
                     <button
-                      onClick={(e) => handleDelete(reward.id, e)}
-                      className={cn(
-                        "absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-colors",
-                        confirmDeleteId === reward.id 
-                          ? "bg-destructive text-destructive-foreground" 
-                          : "bg-background/80 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-                      )}
+                      onClick={(e) => openDeleteModal(reward, e)}
+                      className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-background/80 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -231,18 +227,87 @@ export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={(e) => handleDelete(selectedDino.id, e)}
-                  className={cn(
-                    "h-8 gap-1.5 text-xs",
-                    confirmDeleteId === selectedDino.id 
-                      ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" 
-                      : "text-muted-foreground hover:text-destructive"
-                  )}
+                  onClick={(e) => openDeleteModal(selectedDino, e)}
+                  className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  {confirmDeleteId === selectedDino.id ? "Confirmer" : "Supprimer"}
+                  Supprimer
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {dinoToDelete && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/95 backdrop-blur-xl animate-fade-in"
+          onClick={() => setDinoToDelete(null)}
+        >
+          <div 
+            className="glass-card p-5 max-w-sm w-full space-y-4 animate-scale-in border-destructive/30"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Warning Icon */}
+            <div className="flex justify-center">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-destructive" />
+              </div>
+            </div>
+
+            {/* Title */}
+            <div className="text-center space-y-2">
+              <h3 className="font-bold text-lg">Supprimer ce dinosaure ?</h3>
+              <p className="text-sm text-muted-foreground">
+                Tu es sur le point de supprimer <span className="font-semibold text-foreground">{dinoToDelete.dinoName}</span> de ta collection. Cette action est irréversible.
+              </p>
+            </div>
+
+            {/* Dino Preview */}
+            <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-muted/50">
+              <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
+                {dinoToDelete.imageUrl ? (
+                  <img 
+                    src={dinoToDelete.imageUrl} 
+                    alt={dinoToDelete.dinoName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <img 
+                      src={DINO_IMAGES[dinoToDelete.dinoType]} 
+                      alt={DINO_TYPES.find(d => d.id === dinoToDelete.dinoType)?.name}
+                      className="w-8 h-8 object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-sm">{dinoToDelete.dinoName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {DINO_TYPES.find(d => d.id === dinoToDelete.dinoType)?.name}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setDinoToDelete(null)}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1 gap-2"
+                onClick={confirmDelete}
+              >
+                <Trash2 className="w-4 h-4" />
+                Supprimer
+              </Button>
             </div>
           </div>
         </div>
