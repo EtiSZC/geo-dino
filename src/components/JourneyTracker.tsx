@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Flag, Navigation, CheckCircle, Egg, Smartphone } from 'lucide-react';
+import { Flag, Navigation, CheckCircle, Egg } from 'lucide-react';
 import { Journey } from '@/types/app';
 import { isWithinCheckpoint, areAllCheckpointsValidated, calculateDistance } from '@/lib/geoUtils';
 import { celebrateEggFound } from '@/lib/celebrationFeedback';
