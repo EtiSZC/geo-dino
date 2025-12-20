@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { Search, MapPin, MapPinOff, Loader2, History, X, Trash2, Eye } from 'lucide-react';
+import { Search, MapPin, MapPinOff, Loader2, History, X, Trash2, Eye, Crosshair } from 'lucide-react';
 import { useDestinations, Destination } from '@/hooks/useDestinations';
 
 interface GeocodingResult {
@@ -430,9 +430,31 @@ export function JourneyMap({
   }, [journey, mapLoaded, addRouteToMap]);
 
 
+  // Recenter map on current position
+  const recenterOnPosition = useCallback(() => {
+    if (currentPosition && map.current) {
+      map.current.flyTo({
+        center: currentPosition,
+        zoom: 16,
+        duration: 1000,
+      });
+    }
+  }, [currentPosition]);
+
   return (
     <div className="absolute inset-0">
       <div ref={mapContainer} className="w-full h-full rounded-2xl overflow-hidden" />
+      
+      {/* Recenter button - only show during active journey */}
+      {mode === 'active' && currentPosition && (
+        <button
+          onClick={recenterOnPosition}
+          className="absolute bottom-4 right-4 z-10 p-3 bg-background/90 hover:bg-background border border-border rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+          title="Recentrer sur ma position"
+        >
+          <Crosshair className="w-5 h-5 text-primary" />
+        </button>
+      )}
       
       {/* Loading indicator */}
       {isGettingLocation && (
