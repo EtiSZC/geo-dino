@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Flag, Navigation, CheckCircle, Egg } from 'lucide-react';
+import { Flag, Navigation, CheckCircle, Egg, Smartphone } from 'lucide-react';
 import { Journey } from '@/types/app';
 import { isWithinCheckpoint, areAllCheckpointsValidated, calculateDistance } from '@/lib/geoUtils';
 import { celebrateEggFound } from '@/lib/celebrationFeedback';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useWakeLock } from '@/hooks/useWakeLock';
 
 // Format distance for display
 function formatDistance(meters: number): string {
@@ -32,6 +33,9 @@ export function JourneyTracker({
   onJourneyComplete,
   onStop,
 }: JourneyTrackerProps) {
+  // Keep screen awake while journey is active
+  const { isSupported: wakeLockSupported, isActive: wakeLockActive } = useWakeLock(isActive);
+  
   const validatedCount = journey.checkpoints.filter(cp => cp.validated).length;
   const totalCount = journey.checkpoints.length;
   const progress = (validatedCount / totalCount) * 100;
@@ -112,6 +116,19 @@ export function JourneyTracker({
           </Button>
         )}
       </div>
+
+      {/* Wake lock indicator */}
+      {isActive && wakeLockSupported && (
+        <div className={cn(
+          "flex items-center justify-center gap-2 p-2 rounded-lg text-xs",
+          wakeLockActive ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+        )}>
+          <Smartphone className="w-4 h-4" />
+          <span>
+            {wakeLockActive ? "Écran maintenu allumé" : "Veille automatique"}
+          </span>
+        </div>
+      )}
 
       {/* Distance to next egg */}
       {isActive && nextCheckpointInfo && (
