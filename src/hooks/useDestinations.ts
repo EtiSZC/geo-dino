@@ -82,6 +82,28 @@ export function useDestinations() {
     }
   }, [fetchDestinations]);
 
+  // Delete a destination
+  const deleteDestination = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('destinations')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting destination:', error);
+        return false;
+      }
+
+      // Refresh the list
+      await fetchDestinations();
+      return true;
+    } catch (error) {
+      console.error('Error deleting destination:', error);
+      return false;
+    }
+  }, [fetchDestinations]);
+
   useEffect(() => {
     fetchDestinations();
   }, [fetchDestinations]);
@@ -90,6 +112,7 @@ export function useDestinations() {
     destinations,
     loading,
     addDestination,
+    deleteDestination,
     refreshDestinations: fetchDestinations,
   };
 }
