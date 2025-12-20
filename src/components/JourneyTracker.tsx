@@ -131,13 +131,6 @@ export function JourneyTracker({
         </div>
       )}
 
-      {/* Progress bar */}
-      <div className="relative h-2 bg-secondary rounded-full overflow-hidden">
-        <div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-success rounded-full transition-all duration-500"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
 
       {/* Checkpoint list - as eggs - scrollable with max height */}
       <div className="space-y-2 max-h-32 overflow-y-auto">
