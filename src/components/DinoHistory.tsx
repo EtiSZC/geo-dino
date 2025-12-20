@@ -170,14 +170,14 @@ export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
                 <img 
                   src={selectedDino.imageUrl} 
                   alt={selectedDino.dinoName}
-                  className="w-full h-full object-cover animate-dino-bounce"
+                  className="w-full h-full object-cover animate-dino-alive"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <img 
                     src={DINO_IMAGES[selectedDino.dinoType]} 
                     alt={DINO_TYPES.find(d => d.id === selectedDino.dinoType)?.name}
-                    className="w-24 h-24 object-contain animate-dino-bounce"
+                    className="w-24 h-24 object-contain animate-dino-alive"
                   />
                 </div>
               )}
