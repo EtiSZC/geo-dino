@@ -3,6 +3,7 @@ import { DinoReward, DINO_TYPES } from '@/types/app';
 import { Trophy, Info, X, Trash2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { playDinoRoar } from '@/lib/dinoSounds';
 
 // Import all dinosaur images
 import tRexImg from '@/assets/dinos/t-rex.png';
@@ -80,7 +81,10 @@ export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
             return (
               <div
                 key={reward.id}
-                onClick={() => setSelectedDino(reward)}
+                onClick={() => {
+                  playDinoRoar();
+                  setSelectedDino(reward);
+                }}
                 className={cn(
                   "glass-card p-3 space-y-3 overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]",
                   "border-2"
