@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { Search, MapPin, Map, Satellite, MapPinOff, Loader2, History, X, Trash2 } from 'lucide-react';
+import { Search, MapPin, Map, Satellite, MapPinOff, Loader2, History, X, Trash2, Eye } from 'lucide-react';
 import { useDestinations, Destination } from '@/hooks/useDestinations';
 
 interface GeocodingResult {
@@ -675,16 +675,30 @@ export function JourneyMap({
                           </p>
                         </div>
                       </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteDestination(dest.id);
-                      }}
-                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                      title="Supprimer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          map.current?.flyTo({
+                            center: dest.coordinates,
+                            zoom: 16,
+                            duration: 1000,
+                          });
+                        }}
+                        className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                        title="Centrer sur la carte"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteDestination(dest.id);
+                        }}
+                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                   </div>
                   );
                 })}
