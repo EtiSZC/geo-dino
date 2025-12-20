@@ -14,7 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      destinations: {
+        Row: {
+          coordinates: Json
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          coordinates: Json
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          coordinates?: Json
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
