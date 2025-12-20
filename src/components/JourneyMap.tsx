@@ -309,6 +309,24 @@ export function JourneyMap({
     );
   }, [mapLoaded, currentPosition, journey]);
 
+  // Zoom on user position when journey becomes active
+  const previousMode = useRef<string | null>(null);
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    
+    // Detect transition to active mode
+    if (mode === 'active' && previousMode.current !== 'active' && currentPosition) {
+      map.current.flyTo({
+        center: currentPosition,
+        zoom: 17,
+        duration: 1200,
+        pitch: 60, // Tilt for better immersion
+      });
+    }
+    
+    previousMode.current = mode;
+  }, [mode, mapLoaded, currentPosition]);
+
   // Handle map clicks in setup mode
   useEffect(() => {
     if (!map.current || mode !== 'setup' || !mapLoaded) return;
