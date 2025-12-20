@@ -3,6 +3,7 @@ import { Flag, Navigation, CheckCircle, Egg } from 'lucide-react';
 import { Journey } from '@/types/app';
 import { isWithinCheckpoint, areAllCheckpointsValidated, calculateDistance } from '@/lib/geoUtils';
 import { celebrateEggFound } from '@/lib/celebrationFeedback';
+import { playDinoRoar } from '@/lib/dinoSounds';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -72,8 +73,9 @@ export function JourneyTracker({
 
     journey.checkpoints.forEach(checkpoint => {
       if (!checkpoint.validated && isWithinCheckpoint(currentPosition, checkpoint.coordinates, 15)) {
-        // Trigger celebration feedback
+        // Trigger celebration feedback with dino roar
         celebrateEggFound();
+        playDinoRoar();
         setShowConfetti(true);
         onValidateCheckpoint(checkpoint.id);
       }
