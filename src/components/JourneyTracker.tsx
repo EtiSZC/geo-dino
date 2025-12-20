@@ -89,9 +89,9 @@ export function JourneyTracker({
   return (
     <>
       {showConfetti && <ConfettiCelebration onComplete={() => setShowConfetti(false)} />}
-    <div className="glass-card p-4 space-y-4">
+    <div className="glass-card p-4 space-y-4 h-full flex flex-col">
       {/* Progress header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className={cn(
             "w-10 h-10 rounded-xl flex items-center justify-center",
@@ -120,7 +120,7 @@ export function JourneyTracker({
 
       {/* Distance to next egg */}
       {isActive && nextCheckpointInfo && (
-        <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30">
+        <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30 flex-shrink-0">
           <Egg className="w-5 h-5 text-amber-500" />
           <span className="text-sm font-medium">
             Prochain œuf #{nextCheckpointInfo.index} :
@@ -132,8 +132,8 @@ export function JourneyTracker({
       )}
 
 
-      {/* Checkpoint list - as eggs - scrollable with max height */}
-      <div className="space-y-2 max-h-32 overflow-y-auto">
+      {/* Checkpoint list - as eggs - fills remaining space */}
+      <div className="space-y-2 flex-1 overflow-y-auto min-h-0">
         {journey.checkpoints.map((checkpoint, index) => (
           <div
             key={checkpoint.id}
