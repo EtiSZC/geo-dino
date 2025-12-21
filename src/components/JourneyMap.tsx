@@ -508,15 +508,21 @@ export function JourneyMap({
     }
   }, [compassEnabled]);
 
-  // Handle device orientation for compass mode
+  // Handle device orientation for compass mode with smoothing
   const lastBearingUpdate = useRef<number>(0);
+  const headingHistory = useRef<number[]>([]);
+  const lastAppliedHeading = useRef<number | null>(null);
+  const HEADING_HISTORY_SIZE = 5; // Number of readings for moving average
+  const MIN_HEADING_CHANGE = 8; // Minimum degrees change to update (threshold)
+  const THROTTLE_MS = 150; // Throttle updates to 150ms
+
   useEffect(() => {
     if (!compassEnabled || mode !== 'active') return;
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      // Throttle updates to avoid overlapping animations
+      // Throttle updates
       const now = Date.now();
-      if (now - lastBearingUpdate.current < 50) return;
+      if (now - lastBearingUpdate.current < THROTTLE_MS) return;
       lastBearingUpdate.current = now;
 
       // Use webkitCompassHeading for iOS, or calculate from alpha for Android
@@ -532,10 +538,28 @@ export function JourneyMap({
       }
 
       if (heading !== null && map.current) {
-        setDeviceHeading(heading);
-        // Use jumpTo instead of easeTo for instant rotation without animation
-        // This prevents markers from appearing to float during rotation
-        map.current.setBearing(heading);
+        // Add to history for smoothing (moving average)
+        headingHistory.current.push(heading);
+        if (headingHistory.current.length > HEADING_HISTORY_SIZE) {
+          headingHistory.current.shift();
+        }
+
+        // Calculate smoothed heading using circular mean (handles 0/360 wraparound)
+        const sinSum = headingHistory.current.reduce((sum, h) => sum + Math.sin(h * Math.PI / 180), 0);
+        const cosSum = headingHistory.current.reduce((sum, h) => sum + Math.cos(h * Math.PI / 180), 0);
+        let smoothedHeading = Math.atan2(sinSum, cosSum) * 180 / Math.PI;
+        if (smoothedHeading < 0) smoothedHeading += 360;
+
+        // Check if change is significant enough (with wraparound handling)
+        if (lastAppliedHeading.current !== null) {
+          let diff = Math.abs(smoothedHeading - lastAppliedHeading.current);
+          if (diff > 180) diff = 360 - diff; // Handle 0/360 wraparound
+          if (diff < MIN_HEADING_CHANGE) return; // Skip small changes
+        }
+
+        lastAppliedHeading.current = smoothedHeading;
+        setDeviceHeading(smoothedHeading);
+        map.current.setBearing(smoothedHeading);
       }
     };
 
@@ -543,6 +567,9 @@ export function JourneyMap({
     
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation, true);
+      // Reset history when disabling
+      headingHistory.current = [];
+      lastAppliedHeading.current = null;
     };
   }, [compassEnabled, mode]);
 
