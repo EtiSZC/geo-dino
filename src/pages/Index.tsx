@@ -337,7 +337,7 @@ export default function Index() {
           <header className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                <span className="text-2xl">🥚</span>
+                <span className="text-2xl drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" style={{ filter: 'brightness(1.3) saturate(0.3)' }}>🥚</span>
               </div>
               <div>
                 <h1 className="text-xl font-bold gradient-text">Dino Quest</h1>
@@ -471,7 +471,7 @@ export default function Index() {
                 onClick={() => setView('setup-journey')}
               >
                 <MapPin className="w-5 h-5" />
-                Préparer une Expédition
+                Prépare ton Expédition
               </Button>
             )}
 
