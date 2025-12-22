@@ -223,6 +223,7 @@ const dinoAudioFiles: Record<string, string> = {
   'Brachiosaure': '/sounds/brachiosaurus-roar.mp3',
   'Tricératops': '/sounds/triceratops-roar.mp3',
   'Ankylosaure': '/sounds/ankylosaurus-roar.mp3',
+  'Spinosaure': '/sounds/spinosaurus-roar.mp3',
 };
 
 export function playDinoRoar(dinoType?: string): void {
