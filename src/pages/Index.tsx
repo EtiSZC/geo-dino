@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import hatchingEggImg from '@/assets/dinos/hatching-egg.png';
 import homepageIllustration from '@/assets/homepage-illustration-2.png';
 
-// Import dinosaur images
+// Import dinosaur icon images (small thumbnails)
 import tRexImg from '@/assets/dinos/t-rex.png';
 import triceratopsImg from '@/assets/dinos/triceratops.png';
 import velociraptorImg from '@/assets/dinos/velociraptor.png';
@@ -24,6 +24,16 @@ import pterodactylImg from '@/assets/dinos/pterodactyl.png';
 import brachiosaurusImg from '@/assets/dinos/brachiosaurus.png';
 import ankylosaurusImg from '@/assets/dinos/ankylosaurus.png';
 import spinosaurusImg from '@/assets/dinos/spinosaurus.png';
+
+// Import reveal images (large realistic images)
+import tRexRevealImg from '@/assets/dinos/t-rex-reveal.png';
+import triceratopsRevealImg from '@/assets/dinos/triceratops-reveal.png';
+import velociraptorRevealImg from '@/assets/dinos/velociraptor-reveal.png';
+import stegosaurusRevealImg from '@/assets/dinos/stegosaurus-reveal.png';
+import pterodactylRevealImg from '@/assets/dinos/pterodactyl-reveal.png';
+import brachiosaurusRevealImg from '@/assets/dinos/brachiosaurus-reveal.png';
+import ankylosaurusRevealImg from '@/assets/dinos/ankylosaurus-reveal.png';
+import spinosaurusRevealImg from '@/assets/dinos/spinosaurus-reveal.png';
 
 const DINO_IMAGES: Record<string, string> = {
   't-rex': tRexImg,
@@ -34,6 +44,17 @@ const DINO_IMAGES: Record<string, string> = {
   'brachiosaurus': brachiosaurusImg,
   'ankylosaurus': ankylosaurusImg,
   'spinosaurus': spinosaurusImg,
+};
+
+const DINO_REVEAL_IMAGES: Record<string, string> = {
+  't-rex': tRexRevealImg,
+  'triceratops': triceratopsRevealImg,
+  'velociraptor': velociraptorRevealImg,
+  'stegosaurus': stegosaurusRevealImg,
+  'pterodactyl': pterodactylRevealImg,
+  'brachiosaurus': brachiosaurusRevealImg,
+  'ankylosaurus': ankylosaurusRevealImg,
+  'spinosaurus': spinosaurusRevealImg,
 };
 
 type AppView = 'home' | 'dino-type' | 'setup-journey' | 'active-journey' | 'collection';
@@ -140,7 +161,7 @@ export default function Index() {
   // Prevent multiple completions
   const isCompletingRef = useRef(false);
 
-  // Handle journey completion - generate dinosaur
+  // Handle journey completion - use static reveal image
   const handleJourneyComplete = useCallback(async () => {
     // Guard against multiple calls
     if (isCompletingRef.current) return;
@@ -153,12 +174,12 @@ export default function Index() {
     const dinoName = getRandomDinoName();
     const journeyId = state.user.currentJourney.id;
 
-    // Create initial reward (without image yet)
+    // Create reward with static reveal image
     const reward: DinoReward = {
       id: `dino-${Date.now()}`,
       dinoName,
       dinoType,
-      imageUrl: '', // Will be filled after generation
+      imageUrl: DINO_REVEAL_IMAGES[dinoType], // Use static reveal image
       earnedAt: new Date(),
       journeyId,
     };
@@ -166,28 +187,25 @@ export default function Index() {
     setShowReward(reward);
     setIsGeneratingDino(true);
 
-    // Generate dinosaur image
+    // Fetch only the fun fact from edge function
     try {
       const { data, error } = await supabase.functions.invoke('generate-dinosaur', {
-        body: { dinoType: dinoTypeName, dinoName }
+        body: { dinoType: dinoTypeName, dinoName, skipImageGeneration: true }
       });
 
       if (error) {
-        console.error('Error generating dinosaur:', error);
-        toast.error("Erreur lors de la création du dinosaure");
-      } else if (data?.imageUrl) {
-        reward.imageUrl = data.imageUrl;
+        console.error('Error fetching dinosaur fun fact:', error);
+      } else if (data?.funFact) {
         reward.funFact = data.funFact;
         setShowReward({ ...reward });
       }
     } catch (err) {
       console.error('Error calling generate-dinosaur:', err);
-      toast.error("Impossible de créer le dinosaure");
     } finally {
       setIsGeneratingDino(false);
     }
 
-    // Add to collection AFTER generation (with or without image)
+    // Add to collection
     addDinoReward(reward);
     
     // Reset completion guard for next journey
