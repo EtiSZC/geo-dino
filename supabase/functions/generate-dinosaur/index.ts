@@ -157,14 +157,26 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log("AI response received");
+    console.log("AI response received:", JSON.stringify(data).substring(0, 500));
 
     // Extract the image from the response
     const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
     if (!imageUrl) {
-      console.error("No image in response:", JSON.stringify(data));
-      throw new Error("No image generated");
+      console.error("No image in response. Full response:", JSON.stringify(data));
+      // Return a fallback with fun fact but no image
+      const funFact = getRandomFunFact(dinoType);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          imageUrl: null,
+          dinoName,
+          dinoType,
+          funFact,
+          warning: "Image generation failed"
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Get a fun fact about the dinosaur
