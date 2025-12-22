@@ -106,18 +106,10 @@ serve(async (req) => {
       throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    // Generate a realistic dinosaur image using OpenAI gpt-image-1
-    const prompt = `Create a scientifically accurate, realistic ${dinoType} dinosaur.
-The dinosaur should be:
-- Photorealistic with detailed scales, feathers (if appropriate), and textures
-- Anatomically correct based on paleontological research
-- In a natural prehistoric environment (jungle, swamp, or plains)
-- Dynamic pose showing the dinosaur in its natural behavior
-- Dramatic lighting like a nature documentary
-- High detail on skin texture, eyes, and muscle definition
-Style: National Geographic wildlife photography, ultra-realistic, cinematic lighting, 8K detail`;
+    // Generate a realistic dinosaur image using DALL-E 3
+    const prompt = `Create a scientifically accurate, realistic ${dinoType} dinosaur. Photorealistic with detailed scales or feathers, anatomically correct based on paleontology. Natural prehistoric environment with dramatic lighting. National Geographic wildlife photography style, cinematic, highly detailed.`;
 
-    console.log(`Generating realistic dinosaur image for type: ${dinoType}, name: ${dinoName}`);
+    console.log(`Generating DALL-E 3 dinosaur image for type: ${dinoType}, name: ${dinoName}`);
 
     const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
@@ -126,10 +118,12 @@ Style: National Geographic wildlife photography, ultra-realistic, cinematic ligh
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-image-1",
+        model: "dall-e-3",
         prompt: prompt,
         n: 1,
         size: "1024x1024",
+        quality: "hd",
+        style: "vivid",
       }),
     });
 
@@ -153,18 +147,10 @@ Style: National Geographic wildlife photography, ultra-realistic, cinematic ligh
     }
 
     const data = await response.json();
-    console.log("OpenAI response received");
+    console.log("DALL-E 3 response received");
 
-    // Extract the image URL from the response (OpenAI returns b64_json by default for gpt-image-1)
-    const imageData = data.data?.[0];
-    let imageUrl = null;
-    
-    if (imageData?.b64_json) {
-      // Convert base64 to data URL
-      imageUrl = `data:image/png;base64,${imageData.b64_json}`;
-    } else if (imageData?.url) {
-      imageUrl = imageData.url;
-    }
+    // Extract the image URL from the response (DALL-E 3 returns URL by default)
+    const imageUrl = data.data?.[0]?.url;
     
     if (!imageUrl) {
       console.error("No image in response:", JSON.stringify(data));
