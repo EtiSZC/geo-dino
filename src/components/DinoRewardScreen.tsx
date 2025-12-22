@@ -4,7 +4,7 @@ import { Trophy, Sparkles, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-// Import all dinosaur images
+// Import dinosaur icon images (small thumbnails)
 import tRexImg from '@/assets/dinos/t-rex.png';
 import triceratopsImg from '@/assets/dinos/triceratops.png';
 import velociraptorImg from '@/assets/dinos/velociraptor.png';
@@ -14,7 +14,17 @@ import brachiosaurusImg from '@/assets/dinos/brachiosaurus.png';
 import ankylosaurusImg from '@/assets/dinos/ankylosaurus.png';
 import spinosaurusImg from '@/assets/dinos/spinosaurus.png';
 
-const DINO_IMAGES: Record<string, string> = {
+// Import reveal images (large realistic images)
+import tRexRevealImg from '@/assets/dinos/t-rex-reveal.png';
+import triceratopsRevealImg from '@/assets/dinos/triceratops-reveal.png';
+import velociraptorRevealImg from '@/assets/dinos/velociraptor-reveal.png';
+import stegosaurusRevealImg from '@/assets/dinos/stegosaurus-reveal.png';
+import pterodactylRevealImg from '@/assets/dinos/pterodactyl-reveal.png';
+import brachiosaurusRevealImg from '@/assets/dinos/brachiosaurus-reveal.png';
+import ankylosaurusRevealImg from '@/assets/dinos/ankylosaurus-reveal.png';
+import spinosaurusRevealImg from '@/assets/dinos/spinosaurus-reveal.png';
+
+const DINO_ICONS: Record<string, string> = {
   't-rex': tRexImg,
   'triceratops': triceratopsImg,
   'velociraptor': velociraptorImg,
@@ -23,6 +33,17 @@ const DINO_IMAGES: Record<string, string> = {
   'brachiosaurus': brachiosaurusImg,
   'ankylosaurus': ankylosaurusImg,
   'spinosaurus': spinosaurusImg,
+};
+
+const DINO_REVEAL_IMAGES: Record<string, string> = {
+  't-rex': tRexRevealImg,
+  'triceratops': triceratopsRevealImg,
+  'velociraptor': velociraptorRevealImg,
+  'stegosaurus': stegosaurusRevealImg,
+  'pterodactyl': pterodactylRevealImg,
+  'brachiosaurus': brachiosaurusRevealImg,
+  'ankylosaurus': ankylosaurusRevealImg,
+  'spinosaurus': spinosaurusRevealImg,
 };
 
 interface DinoRewardScreenProps {
@@ -98,35 +119,20 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
               "p-4 rounded-xl border border-border/50 space-y-3",
               `bg-gradient-to-br ${dinoType?.color} bg-opacity-20`
             )}>
-              {/* Image container */}
+            {/* Image container - always use reveal images */}
               <div className="aspect-square rounded-xl overflow-hidden bg-card/80">
-                {reward.imageUrl ? (
-                  <img 
-                    src={reward.imageUrl} 
-                    alt={reward.dinoName}
-                    className="w-full h-full object-cover animate-scale-in"
-                  />
-                ) : isGenerating ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">Création du dinosaure...</p>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <img 
-                      src={DINO_IMAGES[reward.dinoType]} 
-                      alt={dinoType?.name}
-                      className="w-24 h-24 object-contain"
-                    />
-                  </div>
-                )}
+                <img 
+                  src={DINO_REVEAL_IMAGES[reward.dinoType]} 
+                  alt={reward.dinoName}
+                  className="w-full h-full object-cover animate-scale-in"
+                />
               </div>
               
               <div>
                 <p className="text-lg font-bold">{reward.dinoName}</p>
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <img 
-                    src={DINO_IMAGES[reward.dinoType]} 
+                    src={DINO_ICONS[reward.dinoType]} 
                     alt={dinoType?.name}
                     className="w-8 h-8 object-contain"
                   />
