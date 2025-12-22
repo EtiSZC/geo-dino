@@ -217,12 +217,12 @@ function createNoiseBuffer(ctx: AudioContext, duration: number): AudioBuffer {
   return buffer;
 }
 
-// Audio files for specific dinosaurs
+// Audio files for specific dinosaurs (use French names from DINO_TYPES)
 const dinoAudioFiles: Record<string, string> = {
   'T-Rex': '/sounds/t-rex-roar.mp3',
-  'Brachiosaurus': '/sounds/brachiosaurus-roar.mp3',
-  'Triceratops': '/sounds/triceratops-roar.mp3',
-  'Ankylosaurus': '/sounds/ankylosaurus-roar.mp3',
+  'Brachiosaure': '/sounds/brachiosaurus-roar.mp3',
+  'Tricératops': '/sounds/triceratops-roar.mp3',
+  'Ankylosaure': '/sounds/ankylosaurus-roar.mp3',
 };
 
 export function playDinoRoar(dinoType?: string): void {
