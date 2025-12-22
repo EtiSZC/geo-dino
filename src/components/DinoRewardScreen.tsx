@@ -119,12 +119,12 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
               "p-4 rounded-xl border border-border/50 space-y-3",
               `bg-gradient-to-br ${dinoType?.color} bg-opacity-20`
             )}>
-            {/* Image container - always use reveal images */}
-              <div className="aspect-square rounded-xl overflow-hidden bg-card/80">
+            {/* Image container - responsive, no crop */}
+              <div className="w-full rounded-xl overflow-hidden bg-card/80 flex items-center justify-center">
                 <img 
                   src={DINO_REVEAL_IMAGES[reward.dinoType]} 
                   alt={reward.dinoName}
-                  className="w-full h-full object-cover animate-scale-in"
+                  className="w-full h-auto max-h-[50vh] object-contain animate-scale-in"
                 />
               </div>
               
