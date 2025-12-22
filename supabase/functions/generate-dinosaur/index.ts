@@ -100,70 +100,74 @@ serve(async (req) => {
 
   try {
     const { dinoType, dinoName } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    // Generate a realistic dinosaur image
+    // Generate a realistic dinosaur image using OpenAI gpt-image-1
     const prompt = `Create a scientifically accurate, realistic ${dinoType} dinosaur.
-    The dinosaur should be:
-    - Photorealistic with detailed scales, feathers (if appropriate), and textures
-    - Anatomically correct based on paleontological research
-    - In a natural prehistoric environment (jungle, swamp, or plains)
-    - Dynamic pose showing the dinosaur in its natural behavior
-    - Dramatic lighting like a nature documentary
-    - High detail on skin texture, eyes, and muscle definition
-    - Named "${dinoName}" 
-    Style: National Geographic wildlife photography, ultra-realistic, cinematic lighting, 8K detail`;
+The dinosaur should be:
+- Photorealistic with detailed scales, feathers (if appropriate), and textures
+- Anatomically correct based on paleontological research
+- In a natural prehistoric environment (jungle, swamp, or plains)
+- Dynamic pose showing the dinosaur in its natural behavior
+- Dramatic lighting like a nature documentary
+- High detail on skin texture, eyes, and muscle definition
+Style: National Geographic wildlife photography, ultra-realistic, cinematic lighting, 8K detail`;
 
     console.log(`Generating realistic dinosaur image for type: ${dinoType}, name: ${dinoName}`);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        modalities: ["image", "text"],
+        model: "gpt-image-1",
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024",
       }),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenAI API error:", response.status, errorText);
+      
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Trop de requêtes, réessaie plus tard." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
+      if (response.status === 402 || response.status === 401) {
         return new Response(
-          JSON.stringify({ error: "Crédits insuffisants." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Problème d'authentification API." }),
+          { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("AI response received:", JSON.stringify(data).substring(0, 500));
+    console.log("OpenAI response received");
 
-    // Extract the image from the response
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Extract the image URL from the response (OpenAI returns b64_json by default for gpt-image-1)
+    const imageData = data.data?.[0];
+    let imageUrl = null;
+    
+    if (imageData?.b64_json) {
+      // Convert base64 to data URL
+      imageUrl = `data:image/png;base64,${imageData.b64_json}`;
+    } else if (imageData?.url) {
+      imageUrl = imageData.url;
+    }
     
     if (!imageUrl) {
-      console.error("No image in response. Full response:", JSON.stringify(data));
+      console.error("No image in response:", JSON.stringify(data));
       // Return a fallback with fun fact but no image
       const funFact = getRandomFunFact(dinoType);
       return new Response(
