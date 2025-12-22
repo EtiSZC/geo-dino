@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { DinoReward, DINO_TYPES } from '@/types/app';
-import { Trophy, Sparkles, Loader2, Info } from 'lucide-react';
+import { Trophy, Sparkles, Loader2, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-// Import all dinosaur images
+// Import dinosaur icon for type display only (not for main reveal)
 import tRexImg from '@/assets/dinos/t-rex.png';
 import triceratopsImg from '@/assets/dinos/triceratops.png';
 import velociraptorImg from '@/assets/dinos/velociraptor.png';
@@ -14,7 +14,8 @@ import brachiosaurusImg from '@/assets/dinos/brachiosaurus.png';
 import ankylosaurusImg from '@/assets/dinos/ankylosaurus.png';
 import spinosaurusImg from '@/assets/dinos/spinosaurus.png';
 
-const DINO_IMAGES: Record<string, string> = {
+// Icons used ONLY for type indicator, NOT for main dinosaur reveal
+const DINO_ICONS: Record<string, string> = {
   't-rex': tRexImg,
   'triceratops': triceratopsImg,
   'velociraptor': velociraptorImg,
@@ -98,7 +99,7 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
               "p-4 rounded-xl border border-border/50 space-y-3",
               `bg-gradient-to-br ${dinoType?.color} bg-opacity-20`
             )}>
-              {/* Image container */}
+            {/* Image container - shows generated realistic image, NOT icon */}
               <div className="aspect-square rounded-xl overflow-hidden bg-card/80">
                 {reward.imageUrl ? (
                   <img 
@@ -112,12 +113,11 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
                     <p className="text-sm text-muted-foreground">Création du dinosaure...</p>
                   </div>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <img 
-                      src={DINO_IMAGES[reward.dinoType]} 
-                      alt={dinoType?.name}
-                      className="w-24 h-24 object-contain"
-                    />
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-4">
+                    <AlertCircle className="w-12 h-12 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      Erreur lors de la génération de l'image
+                    </p>
                   </div>
                 )}
               </div>
@@ -125,8 +125,9 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
               <div>
                 <p className="text-lg font-bold">{reward.dinoName}</p>
                 <div className="flex items-center justify-center gap-2 mt-1">
+                  {/* Small icon to show dino type */}
                   <img 
-                    src={DINO_IMAGES[reward.dinoType]} 
+                    src={DINO_ICONS[reward.dinoType]} 
                     alt={dinoType?.name}
                     className="w-8 h-8 object-contain"
                   />
