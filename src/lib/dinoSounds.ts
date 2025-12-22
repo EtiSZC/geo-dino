@@ -217,8 +217,22 @@ function createNoiseBuffer(ctx: AudioContext, duration: number): AudioBuffer {
   return buffer;
 }
 
+// Audio files for specific dinosaurs
+const dinoAudioFiles: Record<string, string> = {
+  'T-Rex': '/sounds/t-rex-roar.mp3',
+};
+
 export function playDinoRoar(dinoType?: string): void {
   try {
+    // Check if we have an audio file for this dinosaur
+    if (dinoType && dinoAudioFiles[dinoType]) {
+      const audio = new Audio(dinoAudioFiles[dinoType]);
+      audio.volume = 0.6;
+      audio.play().catch(err => console.log('Audio playback failed:', err));
+      return;
+    }
+
+    // Fall back to synthesized sound for other dinosaurs
     const ctx = getAudioContext();
     const now = ctx.currentTime;
     
