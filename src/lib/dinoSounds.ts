@@ -220,6 +220,7 @@ function createNoiseBuffer(ctx: AudioContext, duration: number): AudioBuffer {
 // Audio files for specific dinosaurs
 const dinoAudioFiles: Record<string, string> = {
   'T-Rex': '/sounds/t-rex-roar.mp3',
+  'Brachiosaurus': '/sounds/brachiosaurus-roar.mp3',
 };
 
 export function playDinoRoar(dinoType?: string): void {
