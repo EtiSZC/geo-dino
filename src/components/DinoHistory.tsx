@@ -104,7 +104,6 @@ export function DinoHistory({ rewards, onDelete, allDinosCollected, onWatchSuper
               <div
                 key={reward.id}
                 onClick={() => {
-                  playDinoRoar(dinoType?.name);
                   setSelectedDino(reward);
                 }}
                 className={cn(
