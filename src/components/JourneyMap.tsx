@@ -77,6 +77,11 @@ export function JourneyMap({
   const [compassEnabled, setCompassEnabled] = useState(false);
   const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
   const initialPositionSet = useRef(false);
+  
+  // Manual interaction tracking for active mode
+  const userInteractingRef = useRef(false);
+  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const AUTO_RECENTER_DELAY = 10000; // 10 seconds
 
   const { destinations, loading: loadingDestinations, addDestination, deleteDestination } = useDestinations();
 
@@ -382,6 +387,48 @@ export function JourneyMap({
     };
   }, [mode, setupStep, startCoords, onSetStart, onSetEnd, mapLoaded, fetchPedestrianRoute]);
 
+  // Handle user interaction to pause auto-centering
+  useEffect(() => {
+    if (!map.current || mode !== 'active') return;
+
+    const handleInteractionStart = () => {
+      userInteractingRef.current = true;
+      
+      // Clear any existing timeout
+      if (interactionTimeoutRef.current) {
+        clearTimeout(interactionTimeoutRef.current);
+        interactionTimeoutRef.current = null;
+      }
+    };
+
+    const handleInteractionEnd = () => {
+      // Start timeout to re-enable auto-centering after 10 seconds
+      interactionTimeoutRef.current = setTimeout(() => {
+        userInteractingRef.current = false;
+      }, AUTO_RECENTER_DELAY);
+    };
+
+    // Listen for interaction events
+    map.current.on('dragstart', handleInteractionStart);
+    map.current.on('zoomstart', handleInteractionStart);
+    map.current.on('dragend', handleInteractionEnd);
+    map.current.on('zoomend', handleInteractionEnd);
+    map.current.on('touchstart', handleInteractionStart);
+    map.current.on('touchend', handleInteractionEnd);
+
+    return () => {
+      if (interactionTimeoutRef.current) {
+        clearTimeout(interactionTimeoutRef.current);
+      }
+      map.current?.off('dragstart', handleInteractionStart);
+      map.current?.off('zoomstart', handleInteractionStart);
+      map.current?.off('dragend', handleInteractionEnd);
+      map.current?.off('zoomend', handleInteractionEnd);
+      map.current?.off('touchstart', handleInteractionStart);
+      map.current?.off('touchend', handleInteractionEnd);
+    };
+  }, [mode, mapLoaded]);
+
   // Update user position marker - always show during active journey
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
@@ -412,8 +459,8 @@ export function JourneyMap({
       userMarker.current.setLngLat(currentPosition);
     }
 
-    // In active mode, fit bounds to show user and next waypoint
-    if (mode === 'active' && journey) {
+    // In active mode, fit bounds to show user and next waypoint (only if not manually interacting)
+    if (mode === 'active' && journey && !userInteractingRef.current) {
       // Find next unvalidated checkpoint
       const nextCheckpoint = journey.checkpoints.find(cp => !cp.validated);
       
@@ -437,7 +484,7 @@ export function JourneyMap({
         });
       }
     }
-  }, [currentPosition, isActive, mapLoaded, mode]);
+  }, [currentPosition, isActive, mapLoaded, mode, journey]);
 
   // Update checkpoint markers when journey exists
   useEffect(() => {
