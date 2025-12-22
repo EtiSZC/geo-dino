@@ -513,7 +513,7 @@ export default function Index() {
                 <Button
                   className="w-full"
                   size="lg"
-                  disabled={!state.user.selectedDinoType}
+                  disabled={!state.user.selectedDinoType || (state.user.selectedDinoType && collectedDinoTypes.includes(state.user.selectedDinoType))}
                   onClick={() => {
                     startJourney();
                     setView('active-journey');
@@ -522,6 +522,12 @@ export default function Index() {
                   <Play className="w-5 h-5" />
                   Partir à l'aventure !
                 </Button>
+
+                {state.user.selectedDinoType && collectedDinoTypes.includes(state.user.selectedDinoType) && (
+                  <p className="text-center text-sm text-amber-500">
+                    Tu as déjà ce dinosaure ! Choisis-en un autre.
+                  </p>
+                )}
 
                 <Button
                   className="w-full"
