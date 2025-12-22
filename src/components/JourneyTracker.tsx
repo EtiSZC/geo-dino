@@ -5,7 +5,6 @@ import { isWithinCheckpoint, areAllCheckpointsValidated, calculateDistance } fro
 import { celebrateEggFound } from '@/lib/celebrationFeedback';
 import { playDinoRoar } from '@/lib/dinoSounds';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
-import { DinoDiscoveryCelebration } from '@/components/DinoDiscoveryCelebration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useWakeLock } from '@/hooks/useWakeLock';
@@ -91,7 +90,6 @@ export function JourneyTracker({
   // Prevent multiple calls to onJourneyComplete
   const hasCompletedRef = useRef(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [showDinoCelebration, setShowDinoCelebration] = useState(false);
   
   // Reset completion flag when journey changes
   useEffect(() => {
@@ -104,20 +102,16 @@ export function JourneyTracker({
 
     journey.checkpoints.forEach(checkpoint => {
       if (!checkpoint.validated && isWithinCheckpoint(currentPosition, checkpoint.coordinates, 15)) {
-        // Trigger celebration feedback
+        // Trigger celebration feedback with dino roar (use specific dino type for destination)
         celebrateEggFound();
-        
         if (checkpoint.isDestination && selectedDinoType) {
-          // Play specific dino roar and show special celebration for destination
+          // Play specific dino roar for the dinosaur type when reaching destination
           const dinoTypeName = DINO_TYPES.find(d => d.id === selectedDinoType)?.name;
           playDinoRoar(dinoTypeName);
-          setShowDinoCelebration(true);
         } else {
-          // Regular confetti for egg checkpoints
           playDinoRoar();
-          setShowConfetti(true);
         }
-        
+        setShowConfetti(true);
         onValidateCheckpoint(checkpoint.id);
       }
     });
@@ -125,22 +119,13 @@ export function JourneyTracker({
     // Check if journey is complete - only trigger once (when destination is validated)
     if (!hasCompletedRef.current && areAllCheckpointsValidated(journey)) {
       hasCompletedRef.current = true;
-      // Delay completion to allow celebration animation to play
-      setTimeout(() => {
-        onJourneyComplete();
-      }, 2500);
+      onJourneyComplete();
     }
   }, [currentPosition, isActive, journey, onValidateCheckpoint, onJourneyComplete, selectedDinoType]);
 
   return (
     <>
       {showConfetti && <ConfettiCelebration onComplete={() => setShowConfetti(false)} />}
-      {showDinoCelebration && selectedDinoType && (
-        <DinoDiscoveryCelebration 
-          dinoType={selectedDinoType} 
-          onComplete={() => setShowDinoCelebration(false)} 
-        />
-      )}
     <div className="glass-card p-4 space-y-4 h-full flex flex-col">
       {/* Progress header */}
       <div className="flex items-center justify-between flex-shrink-0">
