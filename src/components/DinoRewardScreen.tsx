@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DinoReward, DINO_TYPES } from '@/types/app';
+import { playDinoRoar } from '@/lib/dinoSounds';
 import { Trophy, Sparkles, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -94,8 +95,11 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
             </div>
 
             <Button 
-              onClick={() => setRevealed(true)} 
-              className="w-full" 
+              onClick={() => {
+                setRevealed(true);
+                playDinoRoar(dinoType?.name);
+              }} 
+              className="w-full"
               size="lg"
               disabled={isGenerating}
             >

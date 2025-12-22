@@ -37,6 +37,13 @@ export function DinoHistory({ rewards, onDelete, allDinosCollected, onWatchSuper
   const [selectedDino, setSelectedDino] = useState<DinoReward | null>(null);
   const [dinoToDelete, setDinoToDelete] = useState<DinoReward | null>(null);
 
+  // Play roar when a dino is selected
+  const handleSelectDino = (reward: DinoReward) => {
+    const dinoType = DINO_TYPES.find(d => d.id === reward.dinoType);
+    setSelectedDino(reward);
+    playDinoRoar(dinoType?.name);
+  };
+
   const openDeleteModal = (reward: DinoReward, e: React.MouseEvent) => {
     e.stopPropagation();
     setDinoToDelete(reward);
@@ -103,9 +110,7 @@ export function DinoHistory({ rewards, onDelete, allDinosCollected, onWatchSuper
             return (
               <div
                 key={reward.id}
-                onClick={() => {
-                  setSelectedDino(reward);
-                }}
+                onClick={() => handleSelectDino(reward)}
                 className={cn(
                   "glass-card p-3 space-y-3 overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]",
                   "border-2"
