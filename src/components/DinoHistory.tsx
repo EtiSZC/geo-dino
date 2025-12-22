@@ -116,12 +116,12 @@ export function DinoHistory({ rewards, onDelete, allDinosCollected, onWatchSuper
                 }}
               >
                 {/* Dinosaur image */}
-                <div className="aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10 relative">
+                <div className="aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10 relative flex items-center justify-center">
                   {reward.imageUrl ? (
                     <img 
                       src={reward.imageUrl} 
                       alt={reward.dinoName}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -190,20 +190,20 @@ export function DinoHistory({ rewards, onDelete, allDinosCollected, onWatchSuper
               </Button>
             </div>
 
-            {/* Dinosaur Image with animation */}
-            <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
+            {/* Dinosaur Image - no animation */}
+            <div className="w-full rounded-xl overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
               {selectedDino.imageUrl ? (
                 <img 
                   src={selectedDino.imageUrl} 
                   alt={selectedDino.dinoName}
-                  className="w-full h-full object-cover animate-dino-alive"
+                  className="w-full h-auto max-h-[50vh] object-contain"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
+                <div className="w-full py-8 flex items-center justify-center">
                   <img 
                     src={DINO_IMAGES[selectedDino.dinoType]} 
                     alt={DINO_TYPES.find(d => d.id === selectedDino.dinoType)?.name}
-                    className="w-24 h-24 object-contain animate-dino-alive"
+                    className="w-24 h-24 object-contain"
                   />
                 </div>
               )}
