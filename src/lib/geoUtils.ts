@@ -36,9 +36,10 @@ function calculateOptimalWaypointCount(totalDistance: number): number {
   return Math.min(MAX_WAYPOINTS, Math.max(0, maxPossibleWaypoints));
 }
 
-// Generate checkpoints along an actual route path
+// Generate checkpoints along an actual route path, with destination as final checkpoint
 export function generateCheckpointsAlongRoute(
-  routeCoordinates: [number, number][]
+  routeCoordinates: [number, number][],
+  endPoint: [number, number]
 ): Checkpoint[] {
   if (routeCoordinates.length < 2) return [];
   
@@ -54,49 +55,54 @@ export function generateCheckpointsAlongRoute(
     distances.push(totalDistance);
   }
   
-  // Calculate optimal count based on route distance (max 10 waypoints)
+  // Calculate optimal count based on route distance (max 10 waypoints, not counting destination)
   const count = calculateOptimalWaypointCount(totalDistance);
   
-  // If route is too short for any waypoints with proper spacing, return empty
-  if (count === 0) {
-    console.log(`Route too short (${totalDistance.toFixed(0)}m) for waypoints with ${MIN_DISTANCE_BETWEEN_WAYPOINTS}m spacing`);
-    return [];
-  }
-  
-  // Place checkpoints at evenly spaced intervals along the route
-  for (let i = 0; i < count; i++) {
-    // Calculate target distance (evenly distributed, avoiding start and end)
-    const targetDistance = totalDistance * ((i + 1) / (count + 1));
-    
-    // Find the segment containing this distance
-    let segmentIndex = 0;
-    for (let j = 1; j < distances.length; j++) {
-      if (distances[j] >= targetDistance) {
-        segmentIndex = j - 1;
-        break;
+  // Place intermediate checkpoints at evenly spaced intervals along the route
+  if (count > 0) {
+    for (let i = 0; i < count; i++) {
+      // Calculate target distance (evenly distributed, avoiding start and end)
+      const targetDistance = totalDistance * ((i + 1) / (count + 2)); // +2 to leave room for destination
+      
+      // Find the segment containing this distance
+      let segmentIndex = 0;
+      for (let j = 1; j < distances.length; j++) {
+        if (distances[j] >= targetDistance) {
+          segmentIndex = j - 1;
+          break;
+        }
       }
+      
+      // Interpolate position within the segment
+      const segmentStart = distances[segmentIndex];
+      const segmentEnd = distances[segmentIndex + 1];
+      const segmentLength = segmentEnd - segmentStart;
+      const t = segmentLength > 0 ? (targetDistance - segmentStart) / segmentLength : 0;
+      
+      const startCoord = routeCoordinates[segmentIndex];
+      const endCoord = routeCoordinates[segmentIndex + 1] || startCoord;
+      
+      const lng = startCoord[0] + (endCoord[0] - startCoord[0]) * t;
+      const lat = startCoord[1] + (endCoord[1] - startCoord[1]) * t;
+      
+      checkpoints.push({
+        id: `checkpoint-${Date.now()}-${i}`,
+        coordinates: [lng, lat],
+        validated: false,
+        isDestination: false,
+      });
     }
-    
-    // Interpolate position within the segment
-    const segmentStart = distances[segmentIndex];
-    const segmentEnd = distances[segmentIndex + 1];
-    const segmentLength = segmentEnd - segmentStart;
-    const t = segmentLength > 0 ? (targetDistance - segmentStart) / segmentLength : 0;
-    
-    const startCoord = routeCoordinates[segmentIndex];
-    const endCoord = routeCoordinates[segmentIndex + 1] || startCoord;
-    
-    const lng = startCoord[0] + (endCoord[0] - startCoord[0]) * t;
-    const lat = startCoord[1] + (endCoord[1] - startCoord[1]) * t;
-    
-    checkpoints.push({
-      id: `checkpoint-${Date.now()}-${i}`,
-      coordinates: [lng, lat],
-      validated: false,
-    });
   }
   
-  console.log(`Generated ${checkpoints.length} waypoints for ${totalDistance.toFixed(0)}m route`);
+  // Always add destination as the final checkpoint
+  checkpoints.push({
+    id: `checkpoint-destination-${Date.now()}`,
+    coordinates: endPoint,
+    validated: false,
+    isDestination: true,
+  });
+  
+  console.log(`Generated ${checkpoints.length} waypoints (including destination) for ${totalDistance.toFixed(0)}m route`);
   return checkpoints;
 }
 
@@ -159,7 +165,7 @@ export function createJourneyWithRoute(
     name,
     startPoint,
     endPoint,
-    checkpoints: generateCheckpointsAlongRoute(routeCoordinates),
+    checkpoints: generateCheckpointsAlongRoute(routeCoordinates, endPoint),
     routeCoordinates,
     createdAt: new Date(),
   };

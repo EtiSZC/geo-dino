@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Flag, Navigation, CheckCircle, Egg } from 'lucide-react';
-import { Journey } from '@/types/app';
+import { Flag, Navigation, CheckCircle, Egg, Star } from 'lucide-react';
+import { Journey, DinoTypeId, DINO_TYPES } from '@/types/app';
 import { isWithinCheckpoint, areAllCheckpointsValidated, calculateDistance } from '@/lib/geoUtils';
 import { celebrateEggFound } from '@/lib/celebrationFeedback';
 import { playDinoRoar } from '@/lib/dinoSounds';
@@ -8,6 +8,27 @@ import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useWakeLock } from '@/hooks/useWakeLock';
+
+// Import dinosaur images
+import tRexImg from '@/assets/dinos/t-rex.png';
+import triceratopsImg from '@/assets/dinos/triceratops.png';
+import velociraptorImg from '@/assets/dinos/velociraptor.png';
+import stegosaurusImg from '@/assets/dinos/stegosaurus.png';
+import pterodactylImg from '@/assets/dinos/pterodactyl.png';
+import brachiosaurusImg from '@/assets/dinos/brachiosaurus.png';
+import ankylosaurusImg from '@/assets/dinos/ankylosaurus.png';
+import spinosaurusImg from '@/assets/dinos/spinosaurus.png';
+
+const DINO_IMAGES: Record<string, string> = {
+  't-rex': tRexImg,
+  'triceratops': triceratopsImg,
+  'velociraptor': velociraptorImg,
+  'stegosaurus': stegosaurusImg,
+  'pterodactyl': pterodactylImg,
+  'brachiosaurus': brachiosaurusImg,
+  'ankylosaurus': ankylosaurusImg,
+  'spinosaurus': spinosaurusImg,
+};
 
 // Format distance for display
 function formatDistance(meters: number): string {
@@ -24,6 +45,7 @@ interface JourneyTrackerProps {
   onValidateCheckpoint: (checkpointId: string) => void;
   onJourneyComplete: () => void;
   onStop: () => void;
+  selectedDinoType?: DinoTypeId | null;
 }
 
 export function JourneyTracker({
@@ -33,13 +55,19 @@ export function JourneyTracker({
   onValidateCheckpoint,
   onJourneyComplete,
   onStop,
+  selectedDinoType,
 }: JourneyTrackerProps) {
   // Keep screen awake while journey is active
   const { isSupported: wakeLockSupported, isActive: wakeLockActive } = useWakeLock(isActive);
   
   const validatedCount = journey.checkpoints.filter(cp => cp.validated).length;
   const totalCount = journey.checkpoints.length;
-  const progress = (validatedCount / totalCount) * 100;
+  const eggCount = journey.checkpoints.filter(cp => !cp.isDestination).length;
+  const validatedEggCount = journey.checkpoints.filter(cp => !cp.isDestination && cp.validated).length;
+  
+  // Get dinosaur info
+  const dinoInfo = selectedDinoType ? DINO_TYPES.find(d => d.id === selectedDinoType) : null;
+  const dinoImage = selectedDinoType ? DINO_IMAGES[selectedDinoType] : null;
   
   // Calculate distance to next unvalidated checkpoint
   const nextCheckpointInfo = useMemo(() => {
@@ -55,6 +83,7 @@ export function JourneyTracker({
       index: index + 1,
       distance,
       formattedDistance: formatDistance(distance),
+      isDestination: nextCheckpoint.isDestination,
     };
   }, [currentPosition, journey.checkpoints]);
   
@@ -73,20 +102,26 @@ export function JourneyTracker({
 
     journey.checkpoints.forEach(checkpoint => {
       if (!checkpoint.validated && isWithinCheckpoint(currentPosition, checkpoint.coordinates, 15)) {
-        // Trigger celebration feedback with dino roar
+        // Trigger celebration feedback with dino roar (use specific dino type for destination)
         celebrateEggFound();
-        playDinoRoar();
+        if (checkpoint.isDestination && selectedDinoType) {
+          // Play specific dino roar for the dinosaur type when reaching destination
+          const dinoTypeName = DINO_TYPES.find(d => d.id === selectedDinoType)?.name;
+          playDinoRoar(dinoTypeName);
+        } else {
+          playDinoRoar();
+        }
         setShowConfetti(true);
         onValidateCheckpoint(checkpoint.id);
       }
     });
 
-    // Check if journey is complete - only trigger once
+    // Check if journey is complete - only trigger once (when destination is validated)
     if (!hasCompletedRef.current && areAllCheckpointsValidated(journey)) {
       hasCompletedRef.current = true;
       onJourneyComplete();
     }
-  }, [currentPosition, isActive, journey, onValidateCheckpoint, onJourneyComplete]);
+  }, [currentPosition, isActive, journey, onValidateCheckpoint, onJourneyComplete, selectedDinoType]);
 
   return (
     <>
@@ -107,7 +142,7 @@ export function JourneyTracker({
           <div>
             <h3 className="font-semibold">{journey.name}</h3>
             <p className="text-sm text-muted-foreground">
-              {validatedCount} sur {totalCount} œufs trouvés
+              {validatedEggCount} sur {eggCount} œufs + {dinoInfo?.name || 'dinosaure'}
             </p>
           </div>
         </div>
@@ -120,38 +155,71 @@ export function JourneyTracker({
       </div>
 
 
-      {/* Distance to next egg */}
+      {/* Distance to next checkpoint */}
       {isActive && nextCheckpointInfo && (
-        <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30 flex-shrink-0">
-          <Egg className="w-5 h-5 text-amber-500" />
-          <span className="text-sm font-medium">
-            Prochain œuf #{nextCheckpointInfo.index} :
-          </span>
-          <span className="text-lg font-bold text-amber-500">
-            {nextCheckpointInfo.formattedDistance}
-          </span>
+        <div className={cn(
+          "flex items-center justify-center gap-2 p-3 rounded-xl border flex-shrink-0",
+          nextCheckpointInfo.isDestination 
+            ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-emerald-500/30"
+            : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/30"
+        )}>
+          {nextCheckpointInfo.isDestination ? (
+            <>
+              {dinoImage ? (
+                <img src={dinoImage} alt={dinoInfo?.name} className="w-6 h-6 object-contain" />
+              ) : (
+                <Star className="w-5 h-5 text-emerald-500" />
+              )}
+              <span className="text-sm font-medium">
+                {dinoInfo?.name || 'Dinosaure'} :
+              </span>
+              <span className="text-lg font-bold text-emerald-500">
+                {nextCheckpointInfo.formattedDistance}
+              </span>
+            </>
+          ) : (
+            <>
+              <Egg className="w-5 h-5 text-amber-500" />
+              <span className="text-sm font-medium">
+                Œuf #{nextCheckpointInfo.index} :
+              </span>
+              <span className="text-lg font-bold text-amber-500">
+                {nextCheckpointInfo.formattedDistance}
+              </span>
+            </>
+          )}
         </div>
       )}
 
 
-      {/* Checkpoint list - as eggs - fills remaining space */}
+      {/* Checkpoint list - fills remaining space */}
       <div className="space-y-2 flex-1 overflow-y-auto min-h-0">
         {journey.checkpoints.map((checkpoint, index) => (
           <div
             key={checkpoint.id}
             className={cn(
               "flex items-center gap-3 p-2 rounded-lg transition-all duration-300",
-              checkpoint.validated ? "bg-success/10" : "bg-secondary/50"
+              checkpoint.validated 
+                ? "bg-success/10" 
+                : checkpoint.isDestination 
+                  ? "bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20"
+                  : "bg-secondary/50"
             )}
           >
             <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+              "w-8 h-8 rounded-full flex items-center justify-center transition-all overflow-hidden",
               checkpoint.validated
                 ? "bg-success text-success-foreground checkpoint-validated"
-                : "bg-amber-500/20 text-amber-600"
+                : checkpoint.isDestination
+                  ? "bg-gradient-to-br from-emerald-400 to-teal-500"
+                  : "bg-amber-500/20 text-amber-600"
             )}>
               {checkpoint.validated ? (
                 <CheckCircle className="w-5 h-5" />
+              ) : checkpoint.isDestination && dinoImage ? (
+                <img src={dinoImage} alt={dinoInfo?.name} className="w-6 h-6 object-contain" />
+              ) : checkpoint.isDestination ? (
+                <Star className="w-4 h-4 text-white" />
               ) : (
                 <Egg className="w-4 h-4" />
               )}
@@ -159,16 +227,29 @@ export function JourneyTracker({
             <div className="flex-1">
               <p className={cn(
                 "text-sm font-medium",
-                checkpoint.validated ? "text-success" : "text-foreground"
+                checkpoint.validated 
+                  ? "text-success" 
+                  : checkpoint.isDestination 
+                    ? "text-emerald-600 dark:text-emerald-400" 
+                    : "text-foreground"
               )}>
-                Œuf #{index + 1}
+                {checkpoint.isDestination 
+                  ? `🦖 ${dinoInfo?.name || 'Dinosaure'}` 
+                  : `Œuf #${index + 1}`
+                }
               </p>
               <p className="text-xs text-muted-foreground">
-                {checkpoint.validated ? 'Trouvé ! 🎉' : 'Approche-toi (15m)'}
+                {checkpoint.validated 
+                  ? (checkpoint.isDestination ? 'Dinosaure capturé ! 🎉' : 'Trouvé ! 🎉')
+                  : (checkpoint.isDestination ? 'Destination finale (15m)' : 'Approche-toi (15m)')
+                }
               </p>
             </div>
-            {checkpoint.validated && (
+            {checkpoint.validated && !checkpoint.isDestination && (
               <span className="text-xl">🥚</span>
+            )}
+            {checkpoint.validated && checkpoint.isDestination && (
+              <span className="text-xl">🦕</span>
             )}
           </div>
         ))}
