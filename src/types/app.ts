@@ -18,6 +18,7 @@ export interface Checkpoint {
   coordinates: [number, number]; // [lng, lat]
   validated: boolean;
   validatedAt?: Date;
+  isDestination?: boolean; // True if this is the final destination checkpoint
 }
 
 export interface Journey {

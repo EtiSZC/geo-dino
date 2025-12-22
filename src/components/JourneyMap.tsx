@@ -1,10 +1,31 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Journey } from '@/types/app';
+import { Journey, DinoTypeId } from '@/types/app';
 import { cn } from '@/lib/utils';
 import { Search, MapPin, MapPinOff, Loader2, History, X, Trash2, Eye, Crosshair, Navigation, NavigationOff } from 'lucide-react';
 import { useDestinations, Destination } from '@/hooks/useDestinations';
+
+// Import dinosaur images for map markers
+import tRexImg from '@/assets/dinos/t-rex.png';
+import triceratopsImg from '@/assets/dinos/triceratops.png';
+import velociraptorImg from '@/assets/dinos/velociraptor.png';
+import stegosaurusImg from '@/assets/dinos/stegosaurus.png';
+import pterodactylImg from '@/assets/dinos/pterodactyl.png';
+import brachiosaurusImg from '@/assets/dinos/brachiosaurus.png';
+import ankylosaurusImg from '@/assets/dinos/ankylosaurus.png';
+import spinosaurusImg from '@/assets/dinos/spinosaurus.png';
+
+const DINO_IMAGES: Record<string, string> = {
+  't-rex': tRexImg,
+  'triceratops': triceratopsImg,
+  'velociraptor': velociraptorImg,
+  'stegosaurus': stegosaurusImg,
+  'pterodactyl': pterodactylImg,
+  'brachiosaurus': brachiosaurusImg,
+  'ankylosaurus': ankylosaurusImg,
+  'spinosaurus': spinosaurusImg,
+};
 
 interface GeocodingResult {
   id: string;
@@ -21,6 +42,7 @@ interface JourneyMapProps {
   onSetEnd?: (coords: [number, number]) => void;
   onRouteCalculated?: (route: [number, number][]) => void;
   mode: 'setup' | 'active' | 'view';
+  selectedDinoType?: DinoTypeId | null;
 }
 
 export function JourneyMap({
@@ -32,6 +54,7 @@ export function JourneyMap({
   onSetEnd,
   onRouteCalculated,
   mode,
+  selectedDinoType,
 }: JourneyMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -431,22 +454,28 @@ export function JourneyMap({
       .setLngLat(journey.startPoint)
       .addTo(map.current);
 
+    // Remove separate end marker - destination is now a checkpoint
     if (endMarker.current) endMarker.current.remove();
-    const endEl = document.createElement('div');
-    endEl.className = 'w-8 h-8 rounded-full bg-accent border-3 border-white shadow-lg flex items-center justify-center';
-    endEl.innerHTML = '<span class="text-sm font-bold text-white">E</span>';
-    endMarker.current = new mapboxgl.Marker(endEl)
-      .setLngLat(journey.endPoint)
-      .addTo(map.current);
+    endMarker.current = null;
 
     journey.checkpoints.forEach((checkpoint, index) => {
       const el = document.createElement('div');
       
       if (checkpoint.validated) {
+        // Validated checkpoint - show checkmark
         el.className = 'w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 bg-success checkpoint-validated';
         el.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+      } else if (checkpoint.isDestination && selectedDinoType) {
+        // Destination checkpoint - show dinosaur image
+        const dinoImage = DINO_IMAGES[selectedDinoType];
+        el.className = 'flex items-center justify-center shadow-lg transition-all duration-300';
+        el.innerHTML = `
+          <div class="relative w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 border-3 border-white shadow-xl flex items-center justify-center animate-pulse">
+            <img src="${dinoImage}" alt="Dinosaure" class="w-10 h-10 object-contain" />
+          </div>
+        `;
       } else {
-        // Egg-shaped marker with number
+        // Regular egg-shaped marker with number
         el.className = 'flex items-center justify-center shadow-lg transition-all duration-300';
         el.innerHTML = `
           <div class="relative">
@@ -470,7 +499,7 @@ export function JourneyMap({
     if (journey.routeCoordinates) {
       addRouteToMap(journey.routeCoordinates);
     }
-  }, [journey, mapLoaded, addRouteToMap]);
+  }, [journey, mapLoaded, addRouteToMap, selectedDinoType]);
 
 
   // Recenter map on current position

@@ -292,6 +292,7 @@ export default function Index() {
               currentPosition={state.currentPosition}
               isActive={state.isJourneyActive}
               mode="active"
+              selectedDinoType={state.user.selectedDinoType}
             />
             
             {/* GPS status indicator */}
@@ -311,6 +312,7 @@ export default function Index() {
                 stopJourney();
                 setView('home');
               }}
+              selectedDinoType={state.user.selectedDinoType}
             />
           </div>
         </div>
@@ -431,6 +433,7 @@ export default function Index() {
                       currentPosition={state.currentPosition}
                       isActive={false}
                       mode="view"
+                      selectedDinoType={state.user.selectedDinoType}
                     />
                   </div>
                 </div>
