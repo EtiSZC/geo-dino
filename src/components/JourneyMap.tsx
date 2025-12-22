@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Journey, DinoTypeId } from '@/types/app';
 import { cn } from '@/lib/utils';
-import { Search, MapPin, MapPinOff, Loader2, History, X, Trash2, Eye, Crosshair, Navigation, NavigationOff } from 'lucide-react';
+import { Search, MapPin, MapPinOff, Loader2, History, X, Trash2, Eye, Crosshair, Navigation, NavigationOff, Moon, Sun } from 'lucide-react';
 import { useDestinations, Destination } from '@/hooks/useDestinations';
 
 // Import dinosaur images for map markers
@@ -82,6 +82,12 @@ export function JourneyMap({
   const userInteractingRef = useRef(false);
   const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const AUTO_RECENTER_DELAY = 10000; // 10 seconds
+
+  // Night mode detection based on local time
+  const isNightMode = useMemo(() => {
+    const hour = new Date().getHours();
+    return hour >= 20 || hour < 6; // Night between 8 PM and 6 AM
+  }, []);
 
   const { destinations, loading: loadingDestinations, addDestination, deleteDestination } = useDestinations();
 
@@ -262,9 +268,14 @@ export function JourneyMap({
     mapboxgl.accessToken = mapboxToken;
 
     // Start with a neutral center, will be updated with user location
+    // Use night or day style based on local time
+    const mapStyle = isNightMode 
+      ? 'mapbox://styles/mapbox/navigation-night-v1'
+      : 'mapbox://styles/mapbox/satellite-streets-v12';
+    
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/satellite-streets-v12',
+      style: mapStyle,
       center: [0, 0],
       zoom: 2,
       pitch: 45,
