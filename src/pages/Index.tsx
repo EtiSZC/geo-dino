@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { MapPin, Egg, Play, ChevronRight, RotateCcw, Loader2 } from 'lucide-react';
 import { useAppState } from '@/hooks/useAppState';
 import { DinoSelector } from '@/components/DinoSelector';
@@ -7,8 +7,10 @@ import { JourneyTracker } from '@/components/JourneyTracker';
 import { DinoRewardScreen } from '@/components/DinoRewardScreen';
 import { DinoHistory } from '@/components/DinoHistory';
 import { GpsIndicator } from '@/components/GpsIndicator';
+import { SuperRewardUnlock } from '@/components/SuperRewardUnlock';
+import { YouTubeReward } from '@/components/YouTubeReward';
 import { Button } from '@/components/ui/button';
-import { DinoReward, DINO_TYPES } from '@/types/app';
+import { DinoReward, DINO_TYPES, DinoTypeId } from '@/types/app';
 import { createJourneyWithRoute } from '@/lib/geoUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -116,6 +118,19 @@ export default function Index() {
   const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [showSuperRewardUnlock, setShowSuperRewardUnlock] = useState(false);
+  const [showYouTubeReward, setShowYouTubeReward] = useState(false);
+  const [pendingLastDinoReveal, setPendingLastDinoReveal] = useState(false);
+
+  // Get list of already collected dinosaur types (unique)
+  const collectedDinoTypes = useMemo(() => {
+    const types = new Set<DinoTypeId>();
+    state.user.dinoRewards.forEach(reward => types.add(reward.dinoType));
+    return Array.from(types);
+  }, [state.user.dinoRewards]);
+
+  // Check if all dinosaurs are collected
+  const allDinosCollected = collectedDinoTypes.length >= DINO_TYPES.length;
 
   // Watch user position with high accuracy
   useEffect(() => {
@@ -174,6 +189,10 @@ export default function Index() {
     const dinoName = getRandomDinoName();
     const journeyId = state.user.currentJourney.id;
 
+    // Check if this is the last dinosaur to complete the collection
+    const currentCollectedCount = collectedDinoTypes.length;
+    const isLastDino = currentCollectedCount === DINO_TYPES.length - 1;
+
     // Create reward with static reveal image
     const reward: DinoReward = {
       id: `dino-${Date.now()}`,
@@ -183,6 +202,11 @@ export default function Index() {
       earnedAt: new Date(),
       journeyId,
     };
+
+    // Mark if this will complete the collection
+    if (isLastDino) {
+      setPendingLastDinoReveal(true);
+    }
 
     setShowReward(reward);
     setIsGeneratingDino(true);
@@ -210,7 +234,7 @@ export default function Index() {
     
     // Reset completion guard for next journey
     isCompletingRef.current = false;
-  }, [state.user.currentJourney, state.user.selectedDinoType, addDinoReward]);
+  }, [state.user.currentJourney, state.user.selectedDinoType, addDinoReward, collectedDinoTypes.length]);
 
   // Handle creating journey after route is calculated
   const handleCreateJourney = useCallback(() => {
@@ -236,15 +260,39 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background safe-top safe-bottom">
+      {/* YouTube Reward Screen */}
+      {showYouTubeReward && (
+        <YouTubeReward onClose={() => setShowYouTubeReward(false)} />
+      )}
+
+      {/* Super Reward Unlock Screen */}
+      {showSuperRewardUnlock && (
+        <SuperRewardUnlock 
+          onWatchReward={() => {
+            setShowSuperRewardUnlock(false);
+            setShowYouTubeReward(true);
+          }} 
+        />
+      )}
+
       {/* Reward overlay */}
       {showReward && (
         <DinoRewardScreen
           reward={showReward}
           isGenerating={isGeneratingDino}
           onClose={() => {
-            setShowReward(null);
-            resetJourney();
-            setView('home');
+            // Check if this was the last dinosaur (completing the collection)
+            if (pendingLastDinoReveal) {
+              setPendingLastDinoReveal(false);
+              setShowReward(null);
+              resetJourney();
+              // Show super reward unlock screen
+              setShowSuperRewardUnlock(true);
+            } else {
+              setShowReward(null);
+              resetJourney();
+              setView('home');
+            }
           }}
         />
       )}
@@ -263,6 +311,7 @@ export default function Index() {
               setDinoType(dinoType);
               setView('home');
             }}
+            collectedDinoTypes={collectedDinoTypes}
           />
         </div>
       )}
@@ -345,7 +394,12 @@ export default function Index() {
             </Button>
           </header>
           <div className="flex-1 p-4">
-            <DinoHistory rewards={state.user.dinoRewards} onDelete={deleteDinoReward} />
+            <DinoHistory 
+              rewards={state.user.dinoRewards} 
+              onDelete={deleteDinoReward}
+              allDinosCollected={allDinosCollected}
+              onWatchSuperReward={() => setShowYouTubeReward(true)}
+            />
           </div>
         </div>
       )}

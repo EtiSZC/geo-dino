@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DinoReward, DINO_TYPES } from '@/types/app';
-import { Trophy, Info, X, Trash2, AlertTriangle } from 'lucide-react';
+import { Trophy, Info, X, Trash2, AlertTriangle, Play, Youtube } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { playDinoRoar } from '@/lib/dinoSounds';
@@ -29,9 +29,11 @@ const DINO_IMAGES: Record<string, string> = {
 interface DinoHistoryProps {
   rewards: DinoReward[];
   onDelete?: (rewardId: string) => void;
+  allDinosCollected?: boolean;
+  onWatchSuperReward?: () => void;
 }
 
-export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
+export function DinoHistory({ rewards, onDelete, allDinosCollected, onWatchSuperReward }: DinoHistoryProps) {
   const [selectedDino, setSelectedDino] = useState<DinoReward | null>(null);
   const [dinoToDelete, setDinoToDelete] = useState<DinoReward | null>(null);
 
@@ -66,12 +68,32 @@ export function DinoHistory({ rewards, onDelete }: DinoHistoryProps) {
     );
   }
 
+  // Get unique dinosaur types collected
+  const uniqueTypesCount = new Set(rewards.map(r => r.dinoType)).size;
+
   return (
     <>
       <div className="space-y-4">
+        {/* Super Reward Banner - shown when all dinos collected */}
+        {allDinosCollected && onWatchSuperReward && (
+          <button
+            onClick={onWatchSuperReward}
+            className="w-full glass-card p-4 flex items-center gap-4 text-left border-2 border-yellow-500/50 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 hover:from-yellow-500/20 hover:to-amber-500/20 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
+              <Youtube className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-amber-500">🏆 Collection complète !</p>
+              <p className="text-sm text-muted-foreground">Regarde ta super récompense</p>
+            </div>
+            <Play className="w-5 h-5 text-amber-500" />
+          </button>
+        )}
+
         <h3 className="font-semibold flex items-center gap-2">
           <Trophy className="w-5 h-5 text-primary" />
-          Tes Dinosaures ({rewards.length})
+          Tes Dinosaures ({rewards.length}) — {uniqueTypesCount}/{DINO_TYPES.length} espèces
         </h3>
 
         <div className="grid grid-cols-2 gap-3">
