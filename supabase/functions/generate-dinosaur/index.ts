@@ -99,7 +99,22 @@ serve(async (req) => {
   }
 
   try {
-    const { dinoType, dinoName } = await req.json();
+    const { dinoType, dinoName, skipImageGeneration } = await req.json();
+    
+    // If skipImageGeneration is true, just return the fun fact
+    if (skipImageGeneration) {
+      const funFact = getRandomFunFact(dinoType);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          dinoName,
+          dinoType,
+          funFact
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     
     if (!OPENAI_API_KEY) {
