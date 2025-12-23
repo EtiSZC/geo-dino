@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DinoReward, DINO_TYPES } from '@/types/app';
 import { playDinoRoar } from '@/lib/dinoSounds';
-import { Trophy, Sparkles, Loader2, Info } from 'lucide-react';
+import { Trophy, Sparkles, Loader2, Info, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -58,9 +58,60 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
   const [revealed, setRevealed] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [showRetryButton, setShowRetryButton] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Get image source - prefer static imports, fallback to reward.imageUrl
   const imageSrc = DINO_REVEAL_IMAGES[reward.dinoType] || reward.imageUrl;
+
+  // Preload image when revealed
+  const loadImage = useCallback(() => {
+    if (!imageSrc) return;
+    
+    setImageLoaded(false);
+    setImageError(false);
+    setShowRetryButton(false);
+
+    const img = new Image();
+    
+    // Start timeout for retry button
+    const timeoutId = setTimeout(() => {
+      if (!imageLoaded && !imageError) {
+        setShowRetryButton(true);
+      }
+    }, 10000);
+
+    img.onload = () => {
+      clearTimeout(timeoutId);
+      setImageLoaded(true);
+      setShowRetryButton(false);
+    };
+
+    img.onerror = () => {
+      clearTimeout(timeoutId);
+      setImageError(true);
+      setShowRetryButton(true);
+    };
+
+    // Force reload by adding cache-busting query param on retry
+    img.src = retryCount > 0 ? `${imageSrc}?retry=${retryCount}` : imageSrc;
+
+    return () => clearTimeout(timeoutId);
+  }, [imageSrc, retryCount]);
+
+  // Load image when revealed
+  useEffect(() => {
+    if (revealed) {
+      loadImage();
+    }
+  }, [revealed, loadImage]);
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
+
+  // Get the actual image src with cache busting if needed
+  const displayImageSrc = retryCount > 0 ? `${imageSrc}?retry=${retryCount}` : imageSrc;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-xl animate-fade-in">
@@ -134,6 +185,17 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
                   <div className="flex flex-col items-center justify-center p-8 gap-2">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                     <span className="text-sm text-muted-foreground">Chargement de l'image...</span>
+                    {showRetryButton && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleRetry}
+                        className="mt-2"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Recharger l'image
+                      </Button>
+                    )}
                   </div>
                 )}
                 {imageError && (
@@ -144,17 +206,32 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
                       className="w-24 h-24 object-contain"
                     />
                     <span className="text-sm text-muted-foreground">Image non disponible</span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleRetry}
+                      className="mt-2"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Réessayer
+                    </Button>
                   </div>
                 )}
                 <img 
-                  src={imageSrc} 
+                  src={displayImageSrc} 
                   alt={reward.dinoName}
                   className={cn(
                     "w-full h-auto max-h-[50vh] object-contain animate-scale-in",
                     (!imageLoaded || imageError) && "hidden"
                   )}
-                  onLoad={() => setImageLoaded(true)}
-                  onError={() => setImageError(true)}
+                  onLoad={() => {
+                    setImageLoaded(true);
+                    setShowRetryButton(false);
+                  }}
+                  onError={() => {
+                    setImageError(true);
+                    setShowRetryButton(true);
+                  }}
                 />
               </div>
               
