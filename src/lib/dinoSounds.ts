@@ -226,13 +226,32 @@ const dinoAudioFiles: Record<string, string> = {
   'Spinosaure': '/sounds/spinosaurus-roar.mp3',
 };
 
+// Store active audio instance for stopping
+let currentAudio: HTMLAudioElement | null = null;
+
+export function stopDinoRoar(): void {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+}
+
 export function playDinoRoar(dinoType?: string): void {
+  // Stop any currently playing sound
+  stopDinoRoar();
   try {
     // Check if we have an audio file for this dinosaur
     if (dinoType && dinoAudioFiles[dinoType]) {
       const audio = new Audio(dinoAudioFiles[dinoType]);
       audio.volume = 0.6;
+      currentAudio = audio;
       audio.play().catch(err => console.log('Audio playback failed:', err));
+      audio.onended = () => {
+        if (currentAudio === audio) {
+          currentAudio = null;
+        }
+      };
       return;
     }
 

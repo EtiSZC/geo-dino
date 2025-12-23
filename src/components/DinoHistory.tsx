@@ -3,7 +3,7 @@ import { DinoReward, DINO_TYPES } from '@/types/app';
 import { Trophy, Info, X, Trash2, AlertTriangle, Play, Youtube } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { playDinoRoar } from '@/lib/dinoSounds';
+import { playDinoRoar, stopDinoRoar } from '@/lib/dinoSounds';
 
 // Import all dinosaur images
 import tRexImg from '@/assets/dinos/t-rex.png';
@@ -175,7 +175,10 @@ export function DinoHistory({ rewards, onDelete, allDinosCollected, onWatchSuper
       {selectedDino && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-xl animate-fade-in"
-          onClick={() => setSelectedDino(null)}
+          onClick={() => {
+            stopDinoRoar();
+            setSelectedDino(null);
+          }}
         >
           <div 
             className="glass-card p-5 max-w-sm w-full space-y-4 animate-scale-in max-h-[85vh] overflow-y-auto"
@@ -188,7 +191,10 @@ export function DinoHistory({ rewards, onDelete, allDinosCollected, onWatchSuper
                 variant="ghost" 
                 size="icon" 
                 className="h-8 w-8"
-                onClick={() => setSelectedDino(null)}
+                onClick={() => {
+                  stopDinoRoar();
+                  setSelectedDino(null);
+                }}
               >
                 <X className="w-4 h-4" />
               </Button>
