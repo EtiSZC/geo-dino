@@ -221,7 +221,7 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
                   src={displayImageSrc} 
                   alt={reward.dinoName}
                   className={cn(
-                    "w-full h-auto max-h-[50vh] object-contain animate-scale-in",
+                    "w-full h-auto object-contain animate-scale-in",
                     (!imageLoaded || imageError) && "hidden"
                   )}
                   onLoad={() => {
