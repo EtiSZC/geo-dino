@@ -56,6 +56,11 @@ interface DinoRewardScreenProps {
 export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardScreenProps) {
   const dinoType = DINO_TYPES.find(d => d.id === reward.dinoType);
   const [revealed, setRevealed] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Get image source - prefer static imports, fallback to reward.imageUrl
+  const imageSrc = DINO_REVEAL_IMAGES[reward.dinoType] || reward.imageUrl;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-xl animate-fade-in">
@@ -124,11 +129,32 @@ export function DinoRewardScreen({ reward, onClose, isGenerating }: DinoRewardSc
               `bg-gradient-to-br ${dinoType?.color} bg-opacity-20`
             )}>
             {/* Image container - responsive, no crop */}
-              <div className="w-full rounded-xl overflow-hidden bg-card/80 flex items-center justify-center">
+              <div className="w-full rounded-xl overflow-hidden bg-card/80 flex items-center justify-center min-h-[120px]">
+                {!imageLoaded && !imageError && (
+                  <div className="flex flex-col items-center justify-center p-8 gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Chargement de l'image...</span>
+                  </div>
+                )}
+                {imageError && (
+                  <div className="flex flex-col items-center justify-center p-8 gap-2">
+                    <img 
+                      src={DINO_ICONS[reward.dinoType]} 
+                      alt={reward.dinoName}
+                      className="w-24 h-24 object-contain"
+                    />
+                    <span className="text-sm text-muted-foreground">Image non disponible</span>
+                  </div>
+                )}
                 <img 
-                  src={DINO_REVEAL_IMAGES[reward.dinoType]} 
+                  src={imageSrc} 
                   alt={reward.dinoName}
-                  className="w-full h-auto max-h-[50vh] object-contain animate-scale-in"
+                  className={cn(
+                    "w-full h-auto max-h-[50vh] object-contain animate-scale-in",
+                    (!imageLoaded || imageError) && "hidden"
+                  )}
+                  onLoad={() => setImageLoaded(true)}
+                  onError={() => setImageError(true)}
                 />
               </div>
               
