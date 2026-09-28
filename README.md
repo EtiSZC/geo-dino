@@ -1,1 +1,1 @@
-Made with Lovable
+A simple Dinosaur collection game with geolocation
